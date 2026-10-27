@@ -71,6 +71,8 @@ struct IconMetrics {
     var columns: Int { side < 68 ? 9 : 7 }
 
     var gridSpacing: CGFloat { 20 }
+    /// 大图标时压缩行距，避免 35 个/页超出屏幕。
+    var rowSpacing: CGFloat { side >= 92 ? 8 : 20 }
 
     var gridMaxWidth: CGFloat {
         CGFloat(columns) * tileWidth + CGFloat(columns - 1) * gridSpacing + 40

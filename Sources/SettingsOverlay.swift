@@ -59,7 +59,7 @@ struct SettingsOverlay: View {
                             .foregroundStyle(.white.opacity(0.45))
                             .frame(width: 14)
 
-                        Slider(value: $model.iconSide, in: 64...90, step: 1)
+                        Slider(value: $model.iconSide, in: 64...100, step: 1)
                             .tint(Color.white.opacity(0.82))
                             .controlSize(.large)
 

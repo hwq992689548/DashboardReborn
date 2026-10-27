@@ -224,7 +224,7 @@ struct DashboardView: View {
                     if tiles.isEmpty {
                         emptyState
                     } else {
-                        LazyVGrid(columns: gridColumns, spacing: 20) {
+                        LazyVGrid(columns: gridColumns, spacing: model.iconMetrics.rowSpacing) {
                             ForEach(tiles) { tile in
                                 tileView(tile)
                                     .id(tile.id)

@@ -25,7 +25,7 @@ final class DashboardModel: ObservableObject {
     @Published var currentPage = 0
     @Published var iconSide: Double {
         didSet {
-            let clamped = min(max(iconSide, 64), 90)
+            let clamped = min(max(iconSide, 64), 100)
             if clamped != iconSide {
                 iconSide = clamped
                 return
@@ -76,7 +76,7 @@ final class DashboardModel: ObservableObject {
     init() {
         let defaults = Self.settingsDefaults
         if let savedSide = defaults.object(forKey: Self.iconSideKey) as? Double {
-            iconSide = min(max(savedSide, 64), 90)
+            iconSide = min(max(savedSide, 64), 100)
         } else if let legacy = defaults.string(forKey: Self.legacyIconSizeKey) {
             iconSide = legacy == "small" ? 64 : (legacy == "large" ? 90 : 70)
         } else {
