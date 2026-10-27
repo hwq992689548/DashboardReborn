@@ -42,14 +42,11 @@ struct SettingsOverlay: View {
                     title: "每页 App 数量",
                     subtitle: "修改后回到第 1 页"
                 ) {
-                    Picker("每页 App 数量", selection: $model.appsPerPage) {
+                    HStack(spacing: 10) {
                         ForEach(DashboardModel.pageSizeOptions, id: \.self) { count in
-                            Text("\(count) 个").tag(count)
+                            pageSizeOption(count)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .controlSize(.large)
                 }
 
                 settingRow(
@@ -58,7 +55,7 @@ struct SettingsOverlay: View {
                 ) {
                     HStack(spacing: 10) {
                         Text("小")
-                            .font(.system(size: 10))
+                            .font(.system(size: 10.5))
                             .foregroundStyle(.white.opacity(0.45))
                             .frame(width: 14)
 
@@ -167,6 +164,32 @@ struct SettingsOverlay: View {
         }
     }
 
+    private func pageSizeOption(_ count: Int) -> some View {
+        let selected = model.appsPerPage == count
+        return Button {
+            model.appsPerPage = count
+        } label: {
+            Text("\(count) 个")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(selected ? 0.98 : 0.58))
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(selected ? 0.20 : 0.07))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(
+                            Color.white.opacity(selected ? 0.26 : 0.10),
+                            lineWidth: selected ? 1.4 : 0.8
+                        )
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var settingsCloseButton: some View {
         Button {
             close()
@@ -211,21 +234,21 @@ struct SettingsOverlay: View {
             VStack(spacing: 4) {
                 ZStack {
                     BackgroundSwatchFill(style: style, image: nil)
-                        .frame(width: 72, height: 44)
+                        .frame(width: 84, height: 52)
 
                     if model.backgroundStyle == style {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .strokeBorder(Color.white, lineWidth: 2)
-                            .frame(width: 72, height: 44)
+                            .frame(width: 84, height: 52)
                     }
                 }
-                .frame(width: 72, height: 44)
+                .frame(width: 84, height: 52)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(style.title)
-                    .font(.system(size: 10))
+                    .font(.system(size: 10.5))
                     .foregroundStyle(.white.opacity(model.backgroundStyle == style ? 0.95 : 0.55))
             }
-            .frame(width: 74)
+            .frame(width: 86)
         }
         .buttonStyle(.plain)
     }
@@ -244,11 +267,11 @@ struct SettingsOverlay: View {
                         Image(nsImage: image)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 72, height: 44)
+                            .frame(width: 84, height: 52)
                     } else {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .fill(Color.white.opacity(0.08))
-                            .frame(width: 72, height: 44)
+                            .frame(width: 84, height: 52)
                         Image(systemName: "photo")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(.white.opacity(0.60))
@@ -257,16 +280,16 @@ struct SettingsOverlay: View {
                     if model.backgroundStyle == .custom {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .strokeBorder(Color.white, lineWidth: 2)
-                            .frame(width: 72, height: 44)
+                            .frame(width: 84, height: 52)
                     }
                 }
-                .frame(width: 72, height: 44)
+                .frame(width: 84, height: 52)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text("图片")
-                    .font(.system(size: 10))
+                    .font(.system(size: 10.5))
                     .foregroundStyle(.white.opacity(model.backgroundStyle == .custom ? 0.95 : 0.55))
             }
-            .frame(width: 74)
+            .frame(width: 86)
         }
         .buttonStyle(.plain)
         .help(model.hasCustomBackground ? "点击切换或更换图片" : "选择一张图片")
