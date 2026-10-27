@@ -10,6 +10,8 @@ struct DashboardView: View {
     @State private var dragPath: String?
     @State private var dragLocation: CGPoint = .zero
     @State private var dropTargetID: String?
+    @State private var reorderIndex: Int?
+    @State private var insertionLine: DropLine?
 
     var body: some View {
         ZStack {
@@ -55,7 +57,19 @@ struct DashboardView: View {
         .animation(.snappy(duration: 0.24), value: model.openedFolderID)
         .animation(.snappy(duration: 0.2), value: model.toast)
         .onPreferenceChange(TileFramePreferenceKey.self) { tileFrames = $0 }
-        .overlay(alignment: .topLeading) { dragPreview }
+        .overlay(alignment: .topLeading) {
+            ZStack(alignment: .topLeading) {
+                if let line = insertionLine {
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        .fill(Color.white.opacity(0.96))
+                        .frame(width: 3, height: line.height)
+                        .offset(x: line.x - 1.5, y: line.y)
+                        .shadow(color: Color.black.opacity(0.4), radius: 3)
+                        .allowsHitTesting(false)
+                }
+                dragPreview
+            }
+        }
         .onExitCommand(perform: handleEscape)
     }
 
@@ -68,7 +82,7 @@ struct DashboardView: View {
 
             HStack(spacing: 8) {
                 if model.isEditing {
-                    Text("编辑模式 · 拖动分组")
+                    Text("编辑模式 · 拖动排序 / 分组")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.white.opacity(0.82))
                         .padding(.horizontal, 10)
@@ -220,7 +234,6 @@ struct DashboardView: View {
                     .onTapGesture(perform: handleBackgroundTap)
 
                 VStack(spacing: 0) {
-                    if !model.isSearching { Spacer(minLength: 0) }
                     if tiles.isEmpty {
                         emptyState
                     } else {
@@ -236,7 +249,6 @@ struct DashboardView: View {
                         .padding(.top, 8)
                         .padding(.bottom, 8)
                     }
-                    if !model.isSearching { Spacer(minLength: 0) }
                 }
                 .frame(minHeight: height, alignment: .top)
             }
@@ -375,29 +387,123 @@ struct DashboardView: View {
                     }
                 }
                 dragLocation = value.location
-                let target = tileFrames.first {
-                    $0.key != tile.id && $0.value.contains(value.location)
-                }?.key
-                if target != dropTargetID {
-                    withAnimation(.snappy(duration: 0.12)) {
-                        dropTargetID = target
-                    }
-                }
+                updateDropTarget(at: value.location, source: tile)
             }
             .onEnded { value in
                 guard model.isEditing else { return }
-                let target = tileFrames.first {
-                    $0.key != tile.id && $0.value.contains(value.location)
-                }?.key
+                updateDropTarget(at: value.location, source: tile)
+
                 let source = dragPath
-                withAnimation(.snappy(duration: 0.15)) {
+                let groupTarget = dropTargetID
+                let index = reorderIndex
+
+                withAnimation(.snappy(duration: 0.14)) {
                     dragPath = nil
                     dropTargetID = nil
+                    reorderIndex = nil
+                    insertionLine = nil
                 }
-                if let source, let target {
-                    model.drop(path: source, onto: target)
+
+                guard let source else { return }
+                if let groupTarget {
+                    model.drop(path: source, onto: groupTarget)
+                } else if let index {
+                    let globalIndex = model.currentPage * model.appsPerPage + index
+                    withAnimation(.snappy(duration: 0.2)) {
+                        model.moveApp(path: source, to: globalIndex)
+                    }
                 }
             }
+    }
+
+    private func updateDropTarget(at point: CGPoint, source: Tile) {
+        let pageTiles = model.tiles(on: model.currentPage)
+        guard !pageTiles.isEmpty else {
+            clearDropTarget()
+            return
+        }
+
+        var groupID: String?
+        var index: Int?
+
+        // 悬停在图标中心 = 分组；悬停在图标左右边缘 = 插入排序。
+        for (tileIndex, pageTile) in pageTiles.enumerated() {
+            guard pageTile.id != source.id,
+                  let frame = tileFrames[pageTile.id],
+                  frame.contains(point) else { continue }
+
+            if pageTile.folder != nil {
+                groupID = pageTile.id
+            } else {
+                let relativeX = (point.x - frame.minX) / max(frame.width, 1)
+                if relativeX < 0.24 {
+                    index = tileIndex
+                } else if relativeX > 0.76 {
+                    index = tileIndex + 1
+                } else {
+                    groupID = pageTile.id
+                }
+            }
+            break
+        }
+
+        // 空白区域：插到最近的图标前/后；下方空白直接放到本页末尾。
+        if groupID == nil && index == nil {
+            if let last = pageTiles.last,
+               let lastFrame = tileFrames[last.id],
+               point.y > lastFrame.maxY {
+                index = pageTiles.count
+            } else if let first = pageTiles.first,
+                      let firstFrame = tileFrames[first.id],
+                      point.y < firstFrame.minY {
+                index = 0
+            } else {
+                var nearest: (index: Int, frame: CGRect, distance: CGFloat)?
+                for (tileIndex, pageTile) in pageTiles.enumerated() where pageTile.id != source.id {
+                    guard let frame = tileFrames[pageTile.id] else { continue }
+                    let distance = hypot(point.x - frame.midX, point.y - frame.midY)
+                    if nearest == nil || distance < nearest!.distance {
+                        nearest = (tileIndex, frame, distance)
+                    }
+                }
+                if let nearest {
+                    index = point.x < nearest.frame.midX ? nearest.index : nearest.index + 1
+                }
+            }
+        }
+
+        let line = index.flatMap { makeInsertionLine(at: $0, pageTiles: pageTiles) }
+
+        if groupID != dropTargetID || index != reorderIndex || line != insertionLine {
+            withAnimation(.snappy(duration: 0.1)) {
+                dropTargetID = groupID
+                reorderIndex = index
+                insertionLine = line
+            }
+        }
+    }
+
+    private func makeInsertionLine(at index: Int, pageTiles: [Tile]) -> DropLine? {
+        let clamped = min(max(index, 0), pageTiles.count)
+        if clamped < pageTiles.count,
+           let frame = tileFrames[pageTiles[clamped].id] {
+            return DropLine(x: frame.minX - 8, y: frame.minY, height: frame.height)
+        }
+        if let last = pageTiles.last,
+           let frame = tileFrames[last.id] {
+            return DropLine(x: frame.maxX + 8, y: frame.minY, height: frame.height)
+        }
+        return nil
+    }
+
+    private func clearDropTarget() {
+        if dropTargetID != nil || reorderIndex != nil || insertionLine != nil {
+            withAnimation(.snappy(duration: 0.1)) {
+                dropTargetID = nil
+                reorderIndex = nil
+                insertionLine = nil
+            }
+        }
     }
 
     @ViewBuilder
@@ -506,6 +612,12 @@ struct DashboardView: View {
                 current = candidate.superview
             }
         }
+    }
+
+    private struct DropLine: Equatable {
+        let x: CGFloat
+        let y: CGFloat
+        let height: CGFloat
     }
 
     private struct TileFramePreferenceKey: PreferenceKey {

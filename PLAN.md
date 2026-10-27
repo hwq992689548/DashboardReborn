@@ -7,7 +7,7 @@
 >
 > **实施状态（2026-10-27）：已完成可运行原型。**
 > 产物：`dist/Dashboard.app`；构建：`./build.sh`；启动：`open dist/Dashboard.app`。
-> 自动验证：构建通过、扫描到 132 个 App、F12 注册成功、布局 / 分页 / 背景 / 设置自测 25 项全过、LaunchServices 启动并写入 `layout.json`、运行时截图见 `docs/screenshot.png`。
+> 自动验证：构建通过、扫描到 132 个 App、F12 注册成功、布局 / 分页 / 排序 / 背景 / 设置自测 27 项全过、LaunchServices 启动并写入 `layout.json`、运行时截图见 `docs/screenshot.png`。
 > v1.1：顶部搜索（名称 / bundle id，名称命中优先），见 `docs/search.png`。
 > v1.2：`Tab` / `Shift+Tab` 循环选择（末尾回绕）、蓝色高亮、`Enter` 打开，见 `docs/selection.png`。
 > v1.3：分页（默认 35 个/页）、设置面板（每页 20/28/35 个、图标小/中/大）、`←` / `→` 翻页。
@@ -26,6 +26,7 @@
 | 点击图标启动 App | ✅ | `NSWorkspace.shared.openApplication(at:configuration:)` |
 | 长按进入编辑模式 | ✅ | SwiftUI `onLongPressGesture(minimumDuration:)` + 抖动动画 |
 | 拖拽一个 App 到另一个 App 上分组 | ✅ | 自研 `DragGesture` + 控件帧命中（不使用系统 `dropDestination`，避免离屏渲染出现禁用角标） |
+| 拖动排序 | ✅ | 拖到图标边缘/空隙插入，显示插入线；页内排序 |
 | 删除（从面板移除） | ✅ | 修改本地布局 JSON；不会卸载 App，符合旧版 Dashboard 语义 |
 | 真正卸载 App（可选） | ✅ | `NSWorkspace.shared.recycle(_:)` 移到废纸篓，系统会弹授权 |
 | 分组重命名 / 解散 / 移出成员 | ✅ | 本地数据模型 + 右键菜单 / 文件夹弹层 |
@@ -108,8 +109,9 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 |---|---|
 | 点击 App 图标 | 启动 App，并收起 Dashboard |
 | 长按图标 0.55s | 进入编辑模式，图标开始轻微抖动 |
-| 编辑模式下拖拽 A 到 B | 合成文件夹（默认名“新建文件夹”），可重命名 |
+| 编辑模式下拖拽 A 到 B 的中心 | 合成文件夹（默认名“新建文件夹”），可重命名 |
 | 拖拽 App 到文件夹 | 加入该文件夹 |
+| 拖拽到图标边缘 / 空隙 | 插入排序，显示白色插入线 |
 | `Tab` / `Shift+Tab` | 循环选中下一个 / 上一个，末尾回到开头，跨页自动翻页 |
 | `Enter` | 打开选中 App 或进入选中文件夹 |
 | `←` / `→` | 上一页 / 下一页 |
@@ -130,7 +132,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 
 视觉：
 - 默认极光渐变；可切换午夜星空、纯色或自选图片
-- 图标大小小/中/大/超大四档；小图标 9 列，其余 7 列
+- 图标大小小/中/大/超大四档；小图标 9 列，其余 7 列；不足一页内容靠上排列
 - 每页固定数量，横向分页 + 底部圆点；滚动条强制隐藏
 - 顶部只保留居中大搜索框（620×46），无标题栏，并避开刘海 / 菜单栏
 - 背景可切换极光渐变、午夜星空、纯色或自选图片
@@ -162,6 +164,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - [x] 点击图标走 `NSWorkspace.openApplication`（已接线；启动外部 App 未做自动化点击）
 - [x] 长按 0.55s 进入编辑模式，图标抖动（已实现）
 - [x] 编辑模式下拖拽 A 到 B 生成文件夹（手势 + 命中逻辑已实现，数据层自测通过）
+- [x] 拖动到边缘/空隙可插入排序，不足一页时内容靠上（数据层自测 + 运行时）
 - [x] 文件夹可打开、改名、移出成员、解散（数据层自测通过）
 - [x] `Tab` 依次选择，最后一个之后回到第一个；`Shift+Tab` 反向（合成按键测试通过）
 - [x] 选中项有明显蓝色高亮，Enter 可打开（运行时截图验证）
@@ -200,7 +203,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - `glassEffect` 在 SwiftUICore 中可用（macOS 26.0+）
 - 扫描：标准目录原始枚举 139 份，按 bundle id 去重后 **132 个 App**
 - 构建：`swift build -c release` 通过；`dist/Dashboard.app` ad-hoc 签名，`codesign --verify --deep --strict` 通过
-- 逻辑自测：`--self-test` **25 项全部 PASS**（扫描、Tab / 跨页、建组、重命名、移出、隐藏、恢复、解散、落盘、设置 / 背景持久化）
+- 逻辑自测：`--self-test` **27 项全部 PASS**（扫描、Tab / 跨页、排序、建组、重命名、移出、隐藏、恢复、解散、落盘、设置 / 背景持久化）
 - 键盘测试：`--key-test` 合成真实 Tab / Shift+Tab / ← / → 事件，5 项 PASS
 - 滚动测试：`--scroll-test` 合成鼠标滚轮，3 项 PASS（翻一页、冷却内不连翻、再次滚动再翻一页）
 - 点击测试：`--dismiss-test` 合成点击，2 项 PASS（空白背景收起、设置遮罩关闭）
@@ -222,7 +225,7 @@ cd DashboardReborn
 ./build.sh
 open dist/Dashboard.app
 
-# 自动验证（25 项）
+# 自动验证（27 项）
 DASHBOARD_LAYOUT_PATH=$PWD/.build/selftest.json \
 DASHBOARD_SETTINGS_SUITE=dash.self \
 DASHBOARD_BACKGROUND_DIR=$PWD/.build/backgrounds \

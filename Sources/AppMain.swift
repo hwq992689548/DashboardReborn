@@ -435,6 +435,14 @@ enum DashboardMain {
             return 1
         }
 
+        if let reorderPath = initialPaths.first {
+            let total = model.layout.tiles.count
+            model.moveApp(path: reorderPath, to: total)
+            check(model.layout.tiles.last == .app(reorderPath), "拖动排序到页尾")
+            model.moveApp(path: reorderPath, to: 0)
+            check(model.layout.tiles.first == .app(reorderPath), "拖动排序到页首")
+        }
+
         let first = initialPaths[0]
         let second = initialPaths[1]
 

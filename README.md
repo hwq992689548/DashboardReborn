@@ -10,7 +10,8 @@ macOS 26 “液态玻璃”风格的 Dashboard 替代品：读取本机 App、�
 
 - 构建产物 `dist/Dashboard.app`（ad-hoc 签名，`codesign --verify` 通过）
 - 读取到 132 个 App（标准目录原始 139 份，按 bundle id 去重）
-- 布局 / 分页 / 背景 / 设置逻辑自测 25 项全部通过
+- 拖动排序 + 分页顶部对齐：支持页内插入排序，不足一页时靠上排列
+- 布局 / 分页 / 排序 / 背景 / 设置逻辑自测 27 项全部通过
 - Tab / Shift+Tab / ← / → 真实合成按键测试 5 项全部通过
 - 滚动翻页：鼠标滚轮 / 触控板一次动作只翻一页，合成滚轮测试 3 项 PASS
 - 点击空白背景收起 Dashboard、点击设置遮罩关闭设置，合成点击测试 2 项 PASS
@@ -61,7 +62,8 @@ open dist/Dashboard.app
 | 点击设置卡片外遮罩 | 关闭设置 |
 | 点击 App 图标 | 打开 App，Dashboard 收起 |
 | 长按图标 0.55 秒 | 进入编辑模式，图标抖动 |
-| 编辑模式拖动图标 | 拖到另一个 App 上 → 合成文件夹；拖到文件夹上 → 加入 |
+| 编辑模式拖到图标中心 | 合成文件夹；拖到文件夹上 → 加入 |
+| 编辑模式拖到图标边缘/空隙 | 插入排序，显示白色插入线；拖到空白底部可排到页尾 |
 | 点文件夹 | 打开文件夹弹层，可直接改文件夹名 |
 | 编辑模式点 × | 从面板移除（不卸载），可在设置面板“全部恢复”加回 |
 | 右键图标 | 打开 / 在访达中显示 / 从面板移除 / 移到废纸篓 |
@@ -140,7 +142,7 @@ dist/Dashboard.app/Contents/MacOS/Dashboard --scan-json
 # 离屏渲染 UI 预览（无需录屏权限）
 dist/Dashboard.app/Contents/MacOS/Dashboard --render /tmp/dashboard-preview.png
 
-# 数据层 / 分页 / 背景 / 设置自测（25 项）
+# 数据层 / 分页 / 排序 / 背景 / 设置自测（27 项）
 DASHBOARD_LAYOUT_PATH=/tmp/dash-self.json \
 DASHBOARD_SETTINGS_SUITE=dash.self \
 dist/Dashboard.app/Contents/MacOS/Dashboard --self-test
