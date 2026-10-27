@@ -348,11 +348,31 @@ enum DashboardMain {
                !imagePath.isEmpty {
                 controller.model.setCustomBackground(from: URL(fileURLWithPath: imagePath))
             }
+            if ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_DEMO_FOLDER"] == "1" {
+                let paths = controller.model.visibleTiles.compactMap { tile -> String? in
+                    if case .app(let path) = tile { return path }
+                    return nil
+                }
+                if paths.count >= 2 {
+                    controller.model.drop(path: paths[1], onto: "app:\(paths[0])")
+                    if let folder = controller.model.layout.tiles.compactMap(\.folder).first(where: {
+                        $0.appPaths.contains(paths[0])
+                    }) {
+                        controller.model.renameFolder(id: folder.id, name: "我的分组")
+                    }
+                }
+                controller.model.goToPage(0)
+            }
+            if ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_EDIT"] == "1" {
+                controller.model.isEditing = true
+            }
             if ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_SETTINGS"] == "1" {
                 controller.model.isShowingSettings = true
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) {
+
+        let delay = Double(ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_DELAY"] ?? "") ?? 2.2
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             controller.capturePanel(to: path)
             exit(0)
         }

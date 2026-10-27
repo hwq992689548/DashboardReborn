@@ -106,6 +106,16 @@ open dist/Dashboard.app
 
 > 跨页拖拽分组暂未实现：需要先把两个 App 翻到同一页再拖拽。
 
+## 界面预览
+
+| 编辑模式 | 大图标 |
+|---|---|
+| <img src="docs/edit-mode.png" width="420"> | <img src="docs/icon-large.png" width="420"> |
+| **午夜星空背景** | **自定义图片背景** |
+| <img src="docs/background-midnight.png" width="420"> | <img src="docs/custom-background.png" width="420"> |
+
+编辑模式支持长按抖动、拖动分组、点 × 移除；图标可选小 / 中 / 大；背景可选极光、午夜星空、纯色或本地图片。
+
 ## 搜索
 
 顶部是居中的 620×46 大搜索框（参考旧版 Launchpad，但更大），按 App 名称或 bundle id 实时过滤，名称命中排在前面；“Google”示例会同时匹配 Google Chrome、Google 文档、Gmail 等。搜索结果从顶部开始排列。
