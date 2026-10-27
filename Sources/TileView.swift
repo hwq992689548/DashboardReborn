@@ -5,7 +5,7 @@ struct AppTileView: View {
     let isEditing: Bool
     let jiggleSeed: Double
     var isSelected: Bool = false
-    var size: IconSize = .medium
+    var metrics: IconMetrics = IconMetrics(side: 70)
     let onOpen: () -> Void
     let onEnterEdit: () -> Void
     let onRemove: () -> Void
@@ -21,7 +21,7 @@ struct AppTileView: View {
                     .resizable()
                     .interpolation(.high)
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: size.iconSide, height: size.iconSide)
+                    .frame(width: metrics.side, height: metrics.side)
                     .shadow(color: .black.opacity(0.45), radius: 10, x: 0, y: 7)
 
                 if isEditing {
@@ -38,17 +38,17 @@ struct AppTileView: View {
                     .help("从面板移除（不会卸载）")
                 }
             }
-            .frame(width: size.iconFrame, height: size.iconFrame)
+            .frame(width: metrics.iconFrame, height: metrics.iconFrame)
 
             Text(app.name)
-                .font(.system(size: size.labelFont, weight: .medium))
+                .font(.system(size: metrics.labelFont, weight: .medium))
                 .foregroundStyle(.white.opacity(0.92))
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .frame(width: size.labelWidth)
+                .frame(width: metrics.labelWidth)
                 .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
         }
-        .frame(width: size.tileWidth)
+        .frame(width: metrics.tileWidth)
         .padding(.vertical, 6)
         .overlay {
             if isSelected {
@@ -102,7 +102,7 @@ struct FolderTileView: View {
     let isEditing: Bool
     let jiggleSeed: Double
     var isSelected: Bool = false
-    var size: IconSize = .medium
+    var metrics: IconMetrics = IconMetrics(side: 70)
     let onOpen: () -> Void
     let onEnterEdit: () -> Void
     let onDissolve: () -> Void
@@ -120,21 +120,21 @@ struct FolderTileView: View {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
                     }
-                    .frame(width: size.iconSide, height: size.iconSide)
+                    .frame(width: metrics.side, height: metrics.side)
 
                 LazyVGrid(
-                    columns: [GridItem(.fixed(size.folderMini), spacing: 4), GridItem(.fixed(size.folderMini), spacing: 4)],
+                    columns: [GridItem(.fixed(metrics.folderMini), spacing: 4), GridItem(.fixed(metrics.folderMini), spacing: 4)],
                     spacing: 4
                 ) {
                     ForEach(previewPaths, id: \.self) { path in
                         Image(nsImage: IconProvider.shared.icon(for: path))
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: size.folderMini, height: size.folderMini)
+                            .frame(width: metrics.folderMini, height: metrics.folderMini)
                     }
                 }
-                .frame(width: size.folderInner, height: size.folderInner)
-                .offset(x: size.folderInset, y: size.folderInset)
+                .frame(width: metrics.folderInner, height: metrics.folderInner)
+                .offset(x: metrics.folderInset, y: metrics.folderInset)
 
                 if isEditing {
                     Button(action: onDissolve) {
@@ -150,17 +150,17 @@ struct FolderTileView: View {
                     .help("解散文件夹")
                 }
             }
-            .frame(width: size.iconFrame, height: size.iconFrame)
+            .frame(width: metrics.iconFrame, height: metrics.iconFrame)
 
             Text(folder.name)
-                .font(.system(size: size.labelFont, weight: .medium))
+                .font(.system(size: metrics.labelFont, weight: .medium))
                 .foregroundStyle(.white.opacity(0.92))
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .frame(width: size.labelWidth)
+                .frame(width: metrics.labelWidth)
                 .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
         }
-        .frame(width: size.tileWidth)
+        .frame(width: metrics.tileWidth)
         .padding(.vertical, 6)
         .overlay {
             if isSelected {

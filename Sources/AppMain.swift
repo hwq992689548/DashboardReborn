@@ -327,9 +327,17 @@ enum DashboardMain {
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            if let raw = ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_ICON"],
-               let size = IconSize(rawValue: raw) {
-                controller.model.iconSize = size
+            if let raw = ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_ICON"] {
+                let side: Double?
+                switch raw {
+                case "small": side = 64
+                case "medium": side = 70
+                case "large": side = 90
+                default: side = Double(raw)
+                }
+                if let side {
+                    controller.model.iconSide = side
+                }
             }
             if let raw = ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_PAGE_SIZE"],
                let count = Int(raw),
@@ -496,12 +504,12 @@ enum DashboardMain {
         }
 
         // 设置持久化：写入后新建 model 应能读回。
-        model.iconSize = .large
+        model.iconSide = 90
         model.appsPerPage = 28
         let reloadedSettings = DashboardModel()
-        check(reloadedSettings.iconSize == .large, "图标大小设置持久化")
+        check(reloadedSettings.iconSide == 90, "图标大小设置持久化")
         check(reloadedSettings.appsPerPage == 28, "每页数量设置持久化")
-        reloadedSettings.iconSize = .medium
+        reloadedSettings.iconSide = 70
         reloadedSettings.appsPerPage = 35
 
         model.backgroundStyle = .midnight

@@ -23,10 +23,14 @@ final class DashboardModel: ObservableObject {
     }
     @Published var isShowingSettings = false
     @Published var currentPage = 0
-    @Published var iconSize: IconSize {
+    @Published var iconSide: Double {
         didSet {
-            Self.settingsDefaults.set(iconSize.rawValue, forKey: Self.iconSizeKey)
-            clampPage()
+            let clamped = min(max(iconSide, 64), 90)
+            if clamped != iconSide {
+                iconSide = clamped
+                return
+            }
+            Self.settingsDefaults.set(clamped, forKey: Self.iconSideKey)
         }
     }
     @Published var appsPerPage: Int {
@@ -44,8 +48,13 @@ final class DashboardModel: ObservableObject {
     @Published private(set) var customBackgroundImage: NSImage?
     @Published private(set) var customBackgroundPath: String?
 
+    var iconMetrics: IconMetrics {
+        IconMetrics(side: CGFloat(iconSide))
+    }
+
     static let pageSizeOptions = [20, 28, 35]
-    private static let iconSizeKey = "dashboard.iconSize"
+    private static let iconSideKey = "dashboard.iconSide"
+    private static let legacyIconSizeKey = "dashboard.iconSize"
     private static let appsPerPageKey = "dashboard.appsPerPage"
     private static let backgroundStyleKey = "dashboard.backgroundStyle"
     private static let customBackgroundPathKey = "dashboard.customBackgroundPath"
@@ -66,8 +75,13 @@ final class DashboardModel: ObservableObject {
 
     init() {
         let defaults = Self.settingsDefaults
-        iconSize = defaults.string(forKey: Self.iconSizeKey)
-            .flatMap(IconSize.init(rawValue:)) ?? .medium
+        if let savedSide = defaults.object(forKey: Self.iconSideKey) as? Double {
+            iconSide = min(max(savedSide, 64), 90)
+        } else if let legacy = defaults.string(forKey: Self.legacyIconSizeKey) {
+            iconSide = legacy == "small" ? 64 : (legacy == "large" ? 90 : 70)
+        } else {
+            iconSide = 70
+        }
         let savedPageSize = defaults.integer(forKey: Self.appsPerPageKey)
         appsPerPage = Self.pageSizeOptions.contains(savedPageSize) ? savedPageSize : 35
 

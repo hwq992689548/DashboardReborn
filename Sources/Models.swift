@@ -58,49 +58,17 @@ struct DashboardLayout: Codable {
     var hidden: Set<String> = []
 }
 
-/// 列表图标大小：小 / 中 / 大。列数随尺寸变化，保证每页容量与观感稳定。
-enum IconSize: String, CaseIterable, Identifiable, Codable {
-    case small
-    case medium
-    case large
+/// 由滑杆连续控制的图标尺寸和网格度量。
+struct IconMetrics {
+    let side: CGFloat
 
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .small: return "小"
-        case .medium: return "中"
-        case .large: return "大"
-        }
-    }
-
-    var iconSide: CGFloat {
-        switch self {
-        case .small: return 64
-        case .medium: return 70
-        case .large: return 90
-        }
-    }
-
-    var iconFrame: CGFloat { iconSide + 18 }
+    var iconFrame: CGFloat { side + 18 }
     var tileWidth: CGFloat { iconFrame + 24 }
     var labelWidth: CGFloat { tileWidth - 8 }
+    var labelFont: CGFloat { min(13, max(11.5, side / 5.6)) }
 
-    var labelFont: CGFloat {
-        switch self {
-        case .small: return 11.5
-        case .medium: return 12.5
-        case .large: return 13
-        }
-    }
-
-    var columns: Int {
-        switch self {
-        case .small: return 9
-        case .medium: return 7
-        case .large: return 7
-        }
-    }
+    /// 图标较小时多放一列；其余保持 7 列，保证 35 个/页仍然放得下。
+    var columns: Int { side < 68 ? 9 : 7 }
 
     var gridSpacing: CGFloat { 20 }
 
@@ -108,9 +76,9 @@ enum IconSize: String, CaseIterable, Identifiable, Codable {
         CGFloat(columns) * tileWidth + CGFloat(columns - 1) * gridSpacing + 40
     }
 
-    var folderMini: CGFloat { (iconSide * 0.36).rounded() }
+    var folderMini: CGFloat { (side * 0.36).rounded() }
     var folderInner: CGFloat { folderMini * 2 + 4 }
-    var folderInset: CGFloat { (iconSide - folderInner) / 2 }
+    var folderInset: CGFloat { (side - folderInner) / 2 }
 }
 
 /// 背景样式：内置渐变 / 纯色，或用户选择的图片。

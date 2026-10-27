@@ -230,7 +230,7 @@ struct DashboardView: View {
                                     .id(tile.id)
                             }
                         }
-                        .frame(maxWidth: model.iconSize.gridMaxWidth)
+                        .frame(maxWidth: model.iconMetrics.gridMaxWidth)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
@@ -249,7 +249,7 @@ struct DashboardView: View {
     private var gridColumns: [GridItem] {
         Array(
             repeating: GridItem(.flexible(), spacing: 18),
-            count: max(1, model.iconSize.columns)
+            count: max(1, model.iconMetrics.columns)
         )
     }
 
@@ -276,7 +276,7 @@ struct DashboardView: View {
 
     private var previewPage: some View {
         let tiles = Array(model.tiles(on: 0))
-        let perRow = max(1, model.iconSize.columns)
+        let perRow = max(1, model.iconMetrics.columns)
         var rows: [[Tile]] = []
         var index = 0
         while index < tiles.count {
@@ -316,7 +316,7 @@ struct DashboardView: View {
                     isEditing: model.isEditing,
                     jiggleSeed: jiggleSeed(for: tile.id),
                     isSelected: model.selectedTileID == tile.id,
-                    size: model.iconSize,
+                    metrics: model.iconMetrics,
                     onOpen: { model.launch(path) },
                     onEnterEdit: { model.toggleEditing() },
                     onRemove: { model.removeFromDashboard(path) },
@@ -337,7 +337,7 @@ struct DashboardView: View {
                 isEditing: model.isEditing,
                 jiggleSeed: jiggleSeed(for: tile.id),
                 isSelected: model.selectedTileID == tile.id,
-                size: model.iconSize,
+                metrics: model.iconMetrics,
                 onOpen: {
                     withAnimation(.snappy(duration: 0.22)) {
                         model.openedFolderID = folder.id

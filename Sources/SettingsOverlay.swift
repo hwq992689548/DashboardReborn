@@ -55,15 +55,27 @@ struct SettingsOverlay: View {
 
                 settingRow(
                     title: "图标大小",
-                    subtitle: "列数会自动适配"
+                    subtitle: "拖动调整"
                 ) {
-                    Picker("图标大小", selection: $model.iconSize) {
-                        ForEach(IconSize.allCases) { size in
-                            Text(size.title).tag(size)
-                        }
+                    HStack(spacing: 10) {
+                        Text("小")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.45))
+                            .frame(width: 14)
+
+                        Slider(value: $model.iconSide, in: 64...90, step: 1)
+                            .tint(Color.white.opacity(0.82))
+
+                        Text("大")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.70))
+                            .frame(width: 16)
+
+                        Text("\(Int(model.iconSide))")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.55))
+                            .frame(width: 28, alignment: .trailing)
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
                 }
 
                 settingRow(
