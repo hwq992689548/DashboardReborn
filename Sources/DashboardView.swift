@@ -123,7 +123,7 @@ struct DashboardView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, topSafeInset)
-        .padding(.bottom, 4)
+        .padding(.bottom, 8)
     }
 
     /// 刘海屏 / 菜单栏的安全区高度；至少留 38pt，避免搜索框被压住。
@@ -246,7 +246,7 @@ struct DashboardView: View {
                         .frame(maxWidth: model.iconMetrics.gridMaxWidth)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 24)
-                        .padding(.top, 8)
+                        .padding(.top, 24)
                         .padding(.bottom, 8)
                     }
                 }
@@ -313,7 +313,7 @@ struct DashboardView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 14)
+        .padding(.top, 24)
     }
 
     // MARK: - 图标格
