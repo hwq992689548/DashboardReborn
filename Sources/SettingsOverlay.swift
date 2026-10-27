@@ -51,27 +51,12 @@ struct SettingsOverlay: View {
 
                 settingRow(
                     title: "图标大小",
-                    subtitle: "拖动调整"
+                    subtitle: "选一档"
                 ) {
                     HStack(spacing: 10) {
-                        Text("小")
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(.white.opacity(0.45))
-                            .frame(width: 14)
-
-                        Slider(value: $model.iconSide, in: 64...100, step: 1)
-                            .tint(Color.white.opacity(0.82))
-                            .controlSize(.large)
-
-                        Text("大")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.70))
-                            .frame(width: 16)
-
-                        Text("\(Int(model.iconSide))")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.55))
-                            .frame(width: 28, alignment: .trailing)
+                        ForEach(IconSizeChoice.allCases) { choice in
+                            iconSizeOption(choice)
+                        }
                     }
                 }
 
@@ -144,6 +129,33 @@ struct SettingsOverlay: View {
             .shadow(color: .black.opacity(0.55), radius: 40, y: 18)
             .transition(.scale(scale: 0.96).combined(with: .opacity))
         }
+    }
+
+    private func iconSizeOption(_ choice: IconSizeChoice) -> some View {
+        let selected = abs(model.iconSide - choice.side) < 0.5
+        return Button {
+            model.iconSide = choice.side
+        } label: {
+            Text(choice.title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(selected ? 0.98 : 0.58))
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(selected ? 0.20 : 0.07))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(
+                            Color.white.opacity(selected ? 0.26 : 0.10),
+                            lineWidth: selected ? 1.4 : 0.8
+                        )
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help("\(Int(choice.side))pt")
     }
 
     private func pageSizeOption(_ count: Int) -> some View {

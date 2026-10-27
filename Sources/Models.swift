@@ -58,7 +58,35 @@ struct DashboardLayout: Codable {
     var hidden: Set<String> = []
 }
 
-/// 由滑杆连续控制的图标尺寸和网格度量。
+/// 设置面板中的四档图标尺寸。
+enum IconSizeChoice: String, CaseIterable, Identifiable {
+    case small
+    case medium
+    case large
+    case huge
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .small: return "小"
+        case .medium: return "中"
+        case .large: return "大"
+        case .huge: return "超大"
+        }
+    }
+
+    var side: Double {
+        switch self {
+        case .small: return 64
+        case .medium: return 70
+        case .large: return 90
+        case .huge: return 100
+        }
+    }
+}
+
+/// 由图标尺寸计算出的网格度量。
 struct IconMetrics {
     let side: CGFloat
 

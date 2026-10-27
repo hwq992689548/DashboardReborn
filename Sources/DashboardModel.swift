@@ -52,6 +52,12 @@ final class DashboardModel: ObservableObject {
         IconMetrics(side: CGFloat(iconSide))
     }
 
+    private static func snapIconSide(_ value: Double) -> Double {
+        IconSizeChoice.allCases
+            .min(by: { abs($0.side - value) < abs($1.side - value) })?
+            .side ?? 70
+    }
+
     static let pageSizeOptions = [20, 28, 35]
     private static let iconSideKey = "dashboard.iconSide"
     private static let legacyIconSizeKey = "dashboard.iconSize"
@@ -75,13 +81,15 @@ final class DashboardModel: ObservableObject {
 
     init() {
         let defaults = Self.settingsDefaults
+        let loadedSide: Double
         if let savedSide = defaults.object(forKey: Self.iconSideKey) as? Double {
-            iconSide = min(max(savedSide, 64), 100)
+            loadedSide = min(max(savedSide, 64), 100)
         } else if let legacy = defaults.string(forKey: Self.legacyIconSizeKey) {
-            iconSide = legacy == "small" ? 64 : (legacy == "large" ? 90 : 70)
+            loadedSide = legacy == "small" ? 64 : (legacy == "large" ? 90 : 70)
         } else {
-            iconSide = 70
+            loadedSide = 70
         }
+        iconSide = Self.snapIconSide(loadedSide)
         let savedPageSize = defaults.integer(forKey: Self.appsPerPageKey)
         appsPerPage = Self.pageSizeOptions.contains(savedPageSize) ? savedPageSize : 35
 
