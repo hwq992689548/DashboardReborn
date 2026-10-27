@@ -13,7 +13,7 @@ struct SettingsOverlay: View {
                 .contentShape(Rectangle())
                 .onTapGesture { close() }
 
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 24) {
                 HStack(spacing: 10) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 20, weight: .semibold))
@@ -35,9 +35,7 @@ struct SettingsOverlay: View {
 
                     Spacer()
 
-                    CircleActionButton(systemName: "xmark", help: "关闭设置") {
-                        close()
-                    }
+                    settingsCloseButton
                 }
 
                 settingRow(
@@ -51,6 +49,7 @@ struct SettingsOverlay: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .controlSize(.large)
                 }
 
                 settingRow(
@@ -65,6 +64,7 @@ struct SettingsOverlay: View {
 
                         Slider(value: $model.iconSide, in: 64...90, step: 1)
                             .tint(Color.white.opacity(0.82))
+                            .controlSize(.large)
 
                         Text("大")
                             .font(.system(size: 13))
@@ -97,20 +97,14 @@ struct SettingsOverlay: View {
 
                     Spacer()
 
-                    Button("选择图片…") {
+                    pillButton(title: "选择图片…", systemImage: "photo") {
                         chooseBackgroundImage()
                     }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.82))
 
                     if model.hasCustomBackground {
-                        Button("移除") {
+                        pillButton(title: "移除", systemImage: "trash", subtle: true) {
                             model.clearCustomBackground()
                         }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.60))
                     }
                 }
 
@@ -120,41 +114,44 @@ struct SettingsOverlay: View {
                             .font(.system(size: 11))
                             .foregroundStyle(.white.opacity(0.50))
                         Spacer()
-                        Button("全部恢复") {
+                        pillButton(title: "全部恢复", systemImage: "arrow.uturn.backward") {
                             model.restoreHiddenApps()
                         }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 11.5, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .underline()
                     }
                 }
 
-                HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text("共 \(model.pageCount) 页 · 每页 \(model.appsPerPage) 个 · 设置自动保存")
                         .font(.system(size: 11))
                         .foregroundStyle(.white.opacity(0.45))
 
-                    Spacer()
-
-                    Button("完成") {
+                    Button {
                         close()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text("完成")
+                                .font(.system(size: 14, weight: .semibold))
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .bold))
+                        }
+                        .foregroundStyle(.white.opacity(0.95))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.white.opacity(0.16))
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.8)
+                        }
                     }
                     .buttonStyle(.plain)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
-                    .background {
-                        Capsule().fill(Color.white.opacity(0.14))
-                    }
-                    .overlay {
-                        Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 0.8)
-                    }
+                    .keyboardShortcut(.defaultAction)
                 }
             }
-            .padding(26)
-            .frame(width: 700)
+            .padding(28)
+            .frame(width: 720)
             .background {
                 // 玻璃材质在部分离屏/旧环境里会显得透明，叠一层深色底保证可读性。
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -170,6 +167,43 @@ struct SettingsOverlay: View {
         }
     }
 
+    private var settingsCloseButton: some View {
+        Button {
+            close()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.88))
+                .frame(width: 36, height: 36)
+                .background { Circle().fill(Color.white.opacity(0.10)) }
+                .overlay { Circle().strokeBorder(Color.white.opacity(0.16), lineWidth: 0.8) }
+        }
+        .buttonStyle(.plain)
+        .help("关闭设置")
+    }
+
+    private func pillButton(
+        title: String,
+        systemImage: String,
+        subtle: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 12.5, weight: .semibold))
+            }
+            .foregroundStyle(.white.opacity(subtle ? 0.65 : 0.88))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+            .background { Capsule().fill(Color.white.opacity(subtle ? 0.06 : 0.10)) }
+            .overlay { Capsule().strokeBorder(Color.white.opacity(subtle ? 0.08 : 0.14), lineWidth: 0.8) }
+        }
+        .buttonStyle(.plain)
+    }
+
     private func presetSwatch(_ style: BackgroundStyle) -> some View {
         Button {
             model.selectBackground(style)
@@ -177,21 +211,21 @@ struct SettingsOverlay: View {
             VStack(spacing: 4) {
                 ZStack {
                     BackgroundSwatchFill(style: style, image: nil)
-                        .frame(width: 68, height: 42)
+                        .frame(width: 72, height: 44)
 
                     if model.backgroundStyle == style {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .strokeBorder(Color.white, lineWidth: 2)
-                            .frame(width: 68, height: 42)
+                            .frame(width: 72, height: 44)
                     }
                 }
-                .frame(width: 68, height: 42)
+                .frame(width: 72, height: 44)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(style.title)
-                    .font(.system(size: 9.5))
+                    .font(.system(size: 10))
                     .foregroundStyle(.white.opacity(model.backgroundStyle == style ? 0.95 : 0.55))
             }
-            .frame(width: 70)
+            .frame(width: 74)
         }
         .buttonStyle(.plain)
     }
@@ -210,11 +244,11 @@ struct SettingsOverlay: View {
                         Image(nsImage: image)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 68, height: 42)
+                            .frame(width: 72, height: 44)
                     } else {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .fill(Color.white.opacity(0.08))
-                            .frame(width: 68, height: 42)
+                            .frame(width: 72, height: 44)
                         Image(systemName: "photo")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(.white.opacity(0.60))
@@ -223,16 +257,16 @@ struct SettingsOverlay: View {
                     if model.backgroundStyle == .custom {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .strokeBorder(Color.white, lineWidth: 2)
-                            .frame(width: 68, height: 42)
+                            .frame(width: 72, height: 44)
                     }
                 }
-                .frame(width: 68, height: 42)
+                .frame(width: 72, height: 44)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text("图片")
-                    .font(.system(size: 9.5))
+                    .font(.system(size: 10))
                     .foregroundStyle(.white.opacity(model.backgroundStyle == .custom ? 0.95 : 0.55))
             }
-            .frame(width: 70)
+            .frame(width: 74)
         }
         .buttonStyle(.plain)
         .help(model.hasCustomBackground ? "点击切换或更换图片" : "选择一张图片")
