@@ -117,34 +117,16 @@ struct SettingsOverlay: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center, spacing: 10) {
                     Text("共 \(model.pageCount) 页 · 每页 \(model.appsPerPage) 个 · 设置自动保存")
                         .font(.system(size: 11))
                         .foregroundStyle(.white.opacity(0.45))
 
-                    Button {
-                        close()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text("完成")
-                                .font(.system(size: 14, weight: .semibold))
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                        .foregroundStyle(.white.opacity(0.95))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.16))
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.8)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .keyboardShortcut(.defaultAction)
+                    Spacer()
+
+                    Text("点击空白处或右上角 × 关闭")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.white.opacity(0.32))
                 }
             }
             .padding(28)
