@@ -153,6 +153,11 @@ DASHBOARD_LAYOUT_PATH=/tmp/dash-dismiss.json \
 DASHBOARD_SETTINGS_SUITE=dash.dismiss \
 dist/Dashboard.app/Contents/MacOS/Dashboard --dismiss-test
 
+# 文件选择面板可见性（1 项，自动取消）
+DASHBOARD_LAYOUT_PATH=/tmp/dash-picker.json \
+DASHBOARD_SETTINGS_SUITE=dash.picker \
+dist/Dashboard.app/Contents/MacOS/Dashboard --picker-test
+
 # 合成鼠标滚轮：一次滚动只翻一页（3 项）
 DASHBOARD_LAYOUT_PATH=/tmp/dash-scroll.json \
 DASHBOARD_SETTINGS_SUITE=dash.scroll \

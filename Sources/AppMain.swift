@@ -45,6 +45,11 @@ enum DashboardMain {
             exit(runDismissTest())
         }
 
+        // 调试：打开图片选择面板，确认它不会被 Dashboard 面板挡住。
+        if arguments.contains("--picker-test") {
+            exit(runPickerTest())
+        }
+
         // 调试：真正显示面板，1.5 秒后把窗口内容存成 PNG 并退出。
         if let index = arguments.firstIndex(of: "--snapshot"), index + 1 < arguments.count {
             runSnapshot(to: arguments[index + 1])
@@ -298,6 +303,32 @@ enum DashboardMain {
                     }
                 }
             }
+        }
+
+        NSApp.run()
+        return 0
+    }
+
+    @MainActor
+    private static func runPickerTest() -> Int32 {
+        _ = NSApplication.shared
+        NSApp.setActivationPolicy(.accessory)
+
+        let controller = DashboardController()
+        controller.show()
+        controller.model.isShowingSettings = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            let host = NSApp.keyWindow ?? NSApp.windows.first { $0.isVisible }
+            BackgroundImagePicker.present(host: host) { _ in }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            let picker = NSApp.windows.compactMap { $0 as? NSOpenPanel }.first
+            let visible = picker?.isVisible == true
+            print("picker-test: visible=\(visible) key=\(picker?.isKeyWindow ?? false) level=\(picker?.level.rawValue ?? -1)")
+            BackgroundImagePicker.cancelForTesting()
+            exit(visible ? 0 : 1)
         }
 
         NSApp.run()

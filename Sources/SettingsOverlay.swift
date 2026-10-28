@@ -265,14 +265,11 @@ struct SettingsOverlay: View {
     }
 
     private func chooseBackgroundImage() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.image]
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.prompt = "选择背景"
-        // 面板在 .statusBar 层级，文件选择框需要更高一点才不会被挡住。
-        panel.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
-        if panel.runModal() == .OK, let url = panel.url {
+        let host = NSApp.keyWindow ?? NSApp.windows.first {
+            $0.isVisible && !($0 is NSOpenPanel)
+        }
+        BackgroundImagePicker.present(host: host) { url in
+            guard let url else { return }
             model.setCustomBackground(from: url)
         }
     }

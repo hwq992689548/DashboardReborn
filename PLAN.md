@@ -208,6 +208,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - 键盘测试：`--key-test` 合成真实 Tab / Shift+Tab / ← / → 事件，5 项 PASS
 - 滚动测试：`--scroll-test` 合成鼠标滚轮，3 项 PASS（翻一页、冷却内不连翻、再次滚动再翻一页）
 - 点击测试：`--dismiss-test` 合成点击，2 项 PASS（空白背景收起、设置遮罩关闭）
+- 图片选择：`--picker-test` 确认 `NSOpenPanel` 以 sheet 显示且成为 key window，可见性 PASS
 - 启动链路：`--smoke-test` 输出 `panel-created apps=132 tiles=132 f12=true`
 - 运行时截图：`--snapshot` 真实面板 3024×1964，见 `docs/screenshot.png`
 - 搜索：运行时输入 “Google” 得到 11 个匹配，名称命中排在 bundle id 命中之前，见 `docs/search.png`
