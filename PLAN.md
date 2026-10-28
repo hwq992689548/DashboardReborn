@@ -7,7 +7,7 @@
 >
 > **实施状态（2026-10-27）：已完成可运行原型。**
 > 产物：`dist/Dashboard.app`；构建：`./build.sh`；启动：`open dist/Dashboard.app`。
-> 自动验证：构建通过、扫描到 132 个 App、F12 注册成功、布局 / 分页 / 排序 / 背景 / 设置自测 27 项全过、LaunchServices 启动并写入 `layout.json`、运行时截图见 `docs/screenshot.png`。
+> 自动验证：构建通过、扫描到 132 个 App、F12 注册成功、布局 / 分页 / 排序 / 背景 / 设置自测 28 项全过、LaunchServices 启动并写入 `layout.json`、运行时截图见 `docs/screenshot.png`。
 > v1.1：顶部搜索（名称 / bundle id，名称命中优先），见 `docs/search.png`。
 > v1.2：`Tab` / `Shift+Tab` 循环选择（末尾回绕）、蓝色高亮、`Enter` 打开，见 `docs/selection.png`。
 > v1.3：分页（默认 35 个/页）、设置面板（每页 20/28/35 个、图标小/中/大）、`←` / `→` 翻页。
@@ -205,7 +205,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - `glassEffect` 在 SwiftUICore 中可用（macOS 26.0+）
 - 扫描：标准目录原始枚举 139 份，按 bundle id 去重后 **132 个 App**
 - 构建：`swift build -c release` 通过；`dist/Dashboard.app` ad-hoc 签名，`codesign --verify --deep --strict` 通过
-- 逻辑自测：`--self-test` **27 项全部 PASS**（扫描、Tab / 跨页、排序、自动容量、建组、重命名、移出、隐藏、恢复、解散、落盘、设置 / 背景持久化）
+- 逻辑自测：`--self-test` **28 项全部 PASS**（扫描、Tab / 跨页、排序、自动容量、建组、重命名、移出、隐藏、恢复、解散、搜索保留、落盘、设置 / 背景持久化）
 - 键盘测试：`--key-test` 合成真实 Tab / Shift+Tab / ← / → 事件，5 项 PASS
 - 滚动测试：`--scroll-test` 合成鼠标滚轮，3 项 PASS（翻一页、冷却内不连翻、再次滚动再翻一页）
 - 点击测试：`--dismiss-test` 合成点击，2 项 PASS（空白背景收起、设置遮罩关闭）
@@ -228,7 +228,7 @@ cd DashboardReborn
 ./build.sh
 open dist/Dashboard.app
 
-# 自动验证（27 项）
+# 自动验证（28 项）
 DASHBOARD_LAYOUT_PATH=$PWD/.build/selftest.json \
 DASHBOARD_SETTINGS_SUITE=dash.self \
 DASHBOARD_BACKGROUND_DIR=$PWD/.build/backgrounds \

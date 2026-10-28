@@ -286,9 +286,6 @@ final class DashboardModel: ObservableObject {
     // MARK: - 编辑 / 分组
 
     func toggleEditing() {
-        if !isEditing {
-            searchText = ""
-        }
         if isEditing {
             endEditing()
         } else {

@@ -12,7 +12,8 @@ macOS 26 “液态玻璃”风格的 Dashboard 替代品：读取本机 App、�
 - 读取到 132 个 App（标准目录原始 139 份，按 bundle id 去重）
 - 拖动排序 + 分页顶部对齐：支持页内插入排序，不足一页时靠上排列
 - 文件夹：长按 1 秒进入编辑，图标抖动并显示 ×（与主网格一致）；成员拖到弹层外可移出；只剩 1 个成员时自动解散并还原成网格图标
-- 布局 / 分页 / 排序 / 背景 / 设置逻辑自测 27 项全部通过
+- 搜索后长按进入编辑会保留当前搜索和结果
+- 布局 / 分页 / 排序 / 背景 / 设置逻辑自测 28 项全部通过
 - Tab / Shift+Tab / ← / → 真实合成按键测试 5 项全部通过
 - 分页手感：触控板横向交回系统 paged scroll（跟手 + 惯性吸附）；鼠标滚轮一次一页，合成滚轮测试 3 项 PASS
 - 点击空白背景收起 Dashboard、点击设置遮罩关闭设置，合成点击测试 2 项 PASS
@@ -129,9 +130,11 @@ open dist/Dashboard.app
 
 ## 搜索
 
-顶部是居中的 620×46 大搜索框（参考旧版 Launchpad，但更大），按 App 名称或 bundle id 实时过滤，名称命中排在前面；“Google”示例会同时匹配 Google Chrome、Google 文档、Gmail 等。搜索结果从顶部开始排列。
+顶部是居中的 620×46 大搜索框（参考旧版 Launchpad，但更大），按 App 名称或 bundle id 实时过滤，名称命中排在前面；“Google”示例会同时匹配 Google Chrome、Google 文档、Gmail 等。搜索结果从顶部开始排列；长按搜索结果进入编辑时，搜索词和结果都会保留，不会退回全量网格。
 
 ![搜索截图](docs/search.png)
+
+![搜索后长按进入编辑](docs/search-edit.png)
 
 按回车打开第一个结果；`Esc` 先清除搜索，再按一次才会收起面板。
 
@@ -151,7 +154,7 @@ dist/Dashboard.app/Contents/MacOS/Dashboard --scan-json
 # 离屏渲染 UI 预览（无需录屏权限）
 dist/Dashboard.app/Contents/MacOS/Dashboard --render /tmp/dashboard-preview.png
 
-# 数据层 / 分页 / 排序 / 背景 / 设置自测（27 项）
+# 数据层 / 分页 / 排序 / 背景 / 设置自测（28 项）
 DASHBOARD_LAYOUT_PATH=/tmp/dash-self.json \
 DASHBOARD_SETTINGS_SUITE=dash.self \
 dist/Dashboard.app/Contents/MacOS/Dashboard --self-test

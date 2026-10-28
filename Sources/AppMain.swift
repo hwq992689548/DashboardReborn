@@ -398,7 +398,7 @@ enum DashboardMain {
                 controller.model.goToPage(0)
             }
             if ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_EDIT"] == "1" {
-                controller.model.isEditing = true
+                controller.model.toggleEditing()
             }
             if ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_OPEN_FOLDER"] == "1",
                let folder = controller.model.layout.tiles.compactMap(\.folder).first {
@@ -545,6 +545,12 @@ enum DashboardMain {
         } else {
             check(false, "读取磁盘布局失败")
         }
+
+        model.searchText = "a"
+        model.toggleEditing()
+        check(model.isEditing && model.searchText == "a", "进入编辑时保留搜索")
+        model.endEditing()
+        model.clearSearch()
 
         // 设置持久化：写入后新建 model 应能读回。
         model.iconSide = 90
