@@ -13,12 +13,12 @@ struct SettingsOverlay: View {
                 .contentShape(Rectangle())
                 .onTapGesture { close() }
 
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 28) {
                 HStack(spacing: 10) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.85))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 42, height: 42)
                         .background {
                             RoundedRectangle(cornerRadius: 11, style: .continuous)
                                 .fill(Color.white.opacity(0.10))
@@ -26,7 +26,7 @@ struct SettingsOverlay: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("设置")
-                            .font(.system(size: 21, weight: .semibold, design: .rounded))
+                            .font(.system(size: 22, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white)
                         Text("调整图标和背景")
                             .font(.system(size: 11))
@@ -91,6 +91,11 @@ struct SettingsOverlay: View {
                     }
                 }
 
+                Spacer(minLength: 16)
+
+                Divider()
+                    .overlay(Color.white.opacity(0.08))
+
                 HStack(alignment: .center, spacing: 10) {
                     Text("共 \(model.pageCount) 页 · 每页 \(model.pageCapacity) 个 · 随图标大小自动调整")
                         .font(.system(size: 11))
@@ -103,8 +108,11 @@ struct SettingsOverlay: View {
                         .foregroundStyle(.white.opacity(0.32))
                 }
             }
-            .padding(28)
-            .frame(width: 720)
+            .padding(.horizontal, 32)
+            .padding(.top, 30)
+            .padding(.bottom, 28)
+            .frame(width: 740)
+            .frame(height: cardHeight)
             .background {
                 // 玻璃材质在部分离屏/旧环境里会显得透明，叠一层深色底保证可读性。
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -120,6 +128,10 @@ struct SettingsOverlay: View {
         }
     }
 
+    private var cardHeight: CGFloat {
+        model.layout.hidden.isEmpty ? 520 : 590
+    }
+
     private func iconSizeOption(_ choice: IconSizeChoice) -> some View {
         let selected = abs(model.iconSide - choice.side) < 0.5
         return Button {
@@ -129,7 +141,7 @@ struct SettingsOverlay: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.white.opacity(selected ? 0.98 : 0.58))
                 .frame(maxWidth: .infinity)
-                .frame(height: 40)
+                .frame(height: 44)
                 .background {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.white.opacity(selected ? 0.20 : 0.07))
@@ -177,7 +189,7 @@ struct SettingsOverlay: View {
             }
             .foregroundStyle(.white.opacity(subtle ? 0.65 : 0.88))
             .padding(.horizontal, 16)
-            .padding(.vertical, 9)
+            .padding(.vertical, 10)
             .background { Capsule().fill(Color.white.opacity(subtle ? 0.06 : 0.10)) }
             .overlay { Capsule().strokeBorder(Color.white.opacity(subtle ? 0.08 : 0.14), lineWidth: 0.8) }
         }
