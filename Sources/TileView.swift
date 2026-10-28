@@ -66,7 +66,7 @@ struct AppTileView: View {
         .onTapGesture {
             if !isEditing { onOpen() }
         }
-        .onLongPressGesture(minimumDuration: 0.55) {
+        .onLongPressGesture(minimumDuration: 1.0) {
             if !isEditing { onEnterEdit() }
         }
         .modifier(JiggleModifier(active: isEditing, seed: jiggleSeed))
@@ -178,7 +178,7 @@ struct FolderTileView: View {
         .onTapGesture {
             onOpen()
         }
-        .onLongPressGesture(minimumDuration: 0.55) {
+        .onLongPressGesture(minimumDuration: 1.0) {
             if !isEditing { onEnterEdit() }
         }
         .modifier(JiggleModifier(active: isEditing, seed: jiggleSeed))

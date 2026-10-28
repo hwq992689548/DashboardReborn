@@ -151,7 +151,7 @@ struct FolderOverlay: View {
                                 seed: Double(abs(path.hashValue % 6)) * 0.18
                             ))
                             .simultaneousGesture(
-                                LongPressGesture(minimumDuration: 2.0).onEnded { _ in
+                                LongPressGesture(minimumDuration: 1.0).onEnded { _ in
                                     NSHapticFeedbackManager.defaultPerformer.perform(
                                         .alignment,
                                         performanceTime: .now
