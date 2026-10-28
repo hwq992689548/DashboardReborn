@@ -191,7 +191,7 @@ struct FolderTileView: View {
 }
 
 /// 编辑模式下图标轻微抖动，接近旧版 Dashboard / Launchpad 的观感。
-private struct JiggleModifier: ViewModifier {
+struct JiggleModifier: ViewModifier {
     let active: Bool
     let seed: Double
 
