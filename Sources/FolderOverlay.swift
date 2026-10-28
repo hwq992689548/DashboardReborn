@@ -140,9 +140,6 @@ struct FolderOverlay: View {
                                 app: app,
                                 isEditing: model.isEditing,
                                 onOpen: { model.launch(path) },
-                                onLongPress: {
-                                    model.isEditing = true
-                                },
                                 onRemoveFromFolder: {
                                     model.removeFromFolder(folderID: folder.id, path: path)
                                 },
@@ -153,7 +150,16 @@ struct FolderOverlay: View {
                                 active: model.isEditing,
                                 seed: Double(abs(path.hashValue % 6)) * 0.18
                             ))
-                            .highPriorityGesture(folderDragGesture(path))
+                            .simultaneousGesture(
+                                LongPressGesture(minimumDuration: 2.0).onEnded { _ in
+                                    NSHapticFeedbackManager.defaultPerformer.perform(
+                                        .alignment,
+                                        performanceTime: .now
+                                    )
+                                    model.isEditing = true
+                                }
+                            )
+                            .simultaneousGesture(folderDragGesture(path))
                         }
                     }
                 }
@@ -226,7 +232,6 @@ private struct FolderAppTile: View {
     let app: AppInfo
     let isEditing: Bool
     let onOpen: () -> Void
-    let onLongPress: () -> Void
     let onRemoveFromFolder: () -> Void
     let onReveal: () -> Void
     let onRemoveFromDashboard: () -> Void
@@ -268,9 +273,6 @@ private struct FolderAppTile: View {
         .contentShape(Rectangle())
         .onTapGesture {
             if !isEditing { onOpen() }
-        }
-        .onLongPressGesture(minimumDuration: 2.0) {
-            onLongPress()
         }
         .contextMenu {
             Button("打开") { onOpen() }
