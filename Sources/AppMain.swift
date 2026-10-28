@@ -339,11 +339,6 @@ enum DashboardMain {
                     controller.model.iconSide = side
                 }
             }
-            if let raw = ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_PAGE_SIZE"],
-               let count = Int(raw),
-               DashboardModel.pageSizeOptions.contains(count) {
-                controller.model.appsPerPage = count
-            }
             if let raw = ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_PAGE"],
                let page = Int(raw) {
                 controller.model.goToPage(page)
@@ -412,12 +407,13 @@ enum DashboardMain {
             check(model.selectedTileID == tileIDs[0], "Tab 从最后一个回绕到第一个")
 
             model.currentPage = 0
-            model.selectedTileID = tileIDs[model.appsPerPage - 1]
+            let capacity = model.pageCapacity
+            model.selectedTileID = tileIDs[capacity - 1]
             model.selectNext(forward: true)
-            check(model.selectedTileID == tileIDs[model.appsPerPage], "Tab 跨页选中下一页第一个")
+            check(model.selectedTileID == tileIDs[capacity], "Tab 跨页选中下一页第一个")
             check(model.currentPage == 1, "Tab 跨页时自动翻页")
             check(
-                model.pageCount == (tileIDs.count + model.appsPerPage - 1) / model.appsPerPage,
+                model.pageCount == (tileIDs.count + capacity - 1) / capacity,
                 "页数计算正确"
             )
             model.goToPage(999)
@@ -513,12 +509,14 @@ enum DashboardMain {
 
         // 设置持久化：写入后新建 model 应能读回。
         model.iconSide = 90
-        model.appsPerPage = 28
         let reloadedSettings = DashboardModel()
         check(reloadedSettings.iconSide == 90, "图标大小设置持久化")
-        check(reloadedSettings.appsPerPage == 28, "每页数量设置持久化")
+
+        let totalTiles = model.layout.tiles.count
+        model.updatePageCapacity(20)
+        check(model.pageCount == (totalTiles + 19) / 20, "每页容量自动分页")
+        model.updatePageCapacity(35)
         reloadedSettings.iconSide = 70
-        reloadedSettings.appsPerPage = 35
 
         model.backgroundStyle = .midnight
         let reloadedBackground = DashboardModel()

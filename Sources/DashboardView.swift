@@ -173,7 +173,9 @@ struct DashboardView: View {
             HStack(spacing: 9) {
                 ForEach(0..<model.pageCount, id: \.self) { index in
                     Button {
-                        model.goToPage(index)
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            model.goToPage(index)
+                        }
                     } label: {
                         Circle()
                             .fill(Color.white.opacity(index == model.currentPage ? 0.95 : 0.28))
@@ -202,6 +204,8 @@ struct DashboardView: View {
                 previewPage
             } else {
                 GeometryReader { geometry in
+                    let capacity = autoPageCapacity(for: geometry.size)
+
                     ScrollView(.horizontal) {
                         LazyHStack(spacing: 0) {
                             ForEach(0..<model.pageCount, id: \.self) { page in
@@ -214,13 +218,27 @@ struct DashboardView: View {
                         .background(ScrollIndicatorHider())
                     }
                     .scrollIndicators(.never)
-                    .scrollTargetBehavior(.paging)
+                    .modifier(PageSnapBehavior())
                     .scrollPosition(id: pageBinding)
+                    .onAppear { model.updatePageCapacity(capacity) }
+                    .onChange(of: capacity) { _, newValue in
+                        model.updatePageCapacity(newValue)
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .layoutPriority(1)
+    }
+
+    /// 根据页面可用高度和当前图标尺寸计算每页能放多少个。
+    private func autoPageCapacity(for size: CGSize) -> Int {
+        let metrics = model.iconMetrics
+        let availableHeight = max(0, size.height - 24 - 8)
+        let tileHeight = metrics.iconFrame + 36
+        let spacing = metrics.rowSpacing
+        let rows = max(1, Int(floor((availableHeight + spacing) / (tileHeight + spacing))))
+        return max(metrics.columns, metrics.columns * rows)
     }
 
     private func pageView(_ page: Int, height: CGFloat) -> some View {
@@ -408,7 +426,7 @@ struct DashboardView: View {
                 if let groupTarget {
                     model.drop(path: source, onto: groupTarget)
                 } else if let index {
-                    let globalIndex = model.currentPage * model.appsPerPage + index
+                    let globalIndex = model.currentPage * model.pageCapacity + index
                     withAnimation(.snappy(duration: 0.2)) {
                         model.moveApp(path: source, to: globalIndex)
                     }
@@ -610,6 +628,17 @@ struct DashboardView: View {
                     scrollView.hasVerticalScroller = false
                 }
                 current = candidate.superview
+            }
+        }
+    }
+
+    private struct PageSnapBehavior: ViewModifier {
+        func body(content: Content) -> some View {
+            if #available(macOS 15.0, *) {
+                // 系统分页吸附：一次手势最多一页，滑动手感跟手。
+                content.scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne))
+            } else {
+                content.scrollTargetBehavior(.paging)
             }
         }
     }

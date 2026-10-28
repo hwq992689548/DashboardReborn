@@ -33,13 +33,8 @@ final class DashboardModel: ObservableObject {
             Self.settingsDefaults.set(clamped, forKey: Self.iconSideKey)
         }
     }
-    @Published var appsPerPage: Int {
-        didSet {
-            Self.settingsDefaults.set(appsPerPage, forKey: Self.appsPerPageKey)
-            currentPage = 0
-            selectedTileID = nil
-        }
-    }
+    /// 每页容量由图标尺寸和页面可用高度自动计算，不再写入设置。
+    @Published private(set) var pageCapacity = 35
     @Published var backgroundStyle: BackgroundStyle {
         didSet {
             Self.settingsDefaults.set(backgroundStyle.rawValue, forKey: Self.backgroundStyleKey)
@@ -52,16 +47,22 @@ final class DashboardModel: ObservableObject {
         IconMetrics(side: CGFloat(iconSide))
     }
 
+    func updatePageCapacity(_ capacity: Int) {
+        let clamped = max(1, capacity)
+        guard clamped != pageCapacity else { return }
+        pageCapacity = clamped
+        currentPage = min(currentPage, max(0, pageCount - 1))
+        selectedTileID = nil
+    }
+
     private static func snapIconSide(_ value: Double) -> Double {
         IconSizeChoice.allCases
             .min(by: { abs($0.side - value) < abs($1.side - value) })?
             .side ?? 70
     }
 
-    static let pageSizeOptions = [20, 28, 35]
     private static let iconSideKey = "dashboard.iconSide"
     private static let legacyIconSizeKey = "dashboard.iconSize"
-    private static let appsPerPageKey = "dashboard.appsPerPage"
     private static let backgroundStyleKey = "dashboard.backgroundStyle"
     private static let customBackgroundPathKey = "dashboard.customBackgroundPath"
 
@@ -90,9 +91,6 @@ final class DashboardModel: ObservableObject {
             loadedSide = 70
         }
         iconSide = Self.snapIconSide(loadedSide)
-        let savedPageSize = defaults.integer(forKey: Self.appsPerPageKey)
-        appsPerPage = Self.pageSizeOptions.contains(savedPageSize) ? savedPageSize : 35
-
         var savedStyle = defaults.string(forKey: Self.backgroundStyleKey)
             .flatMap(BackgroundStyle.init(rawValue:)) ?? .aurora
         if let path = defaults.string(forKey: Self.customBackgroundPathKey),
@@ -510,14 +508,14 @@ final class DashboardModel: ObservableObject {
     var pageCount: Int {
         let count = visibleTiles.count
         guard count > 0 else { return 1 }
-        return (count + appsPerPage - 1) / appsPerPage
+        return (count + pageCapacity - 1) / pageCapacity
     }
 
     func tiles(on page: Int) -> [Tile] {
         let all = visibleTiles
-        let start = page * appsPerPage
+        let start = page * pageCapacity
         guard start >= 0, start < all.count else { return [] }
-        let end = min(start + appsPerPage, all.count)
+        let end = min(start + pageCapacity, all.count)
         return Array(all[start..<end])
     }
 
@@ -562,7 +560,7 @@ final class DashboardModel: ObservableObject {
             ? (index + 1) % ids.count
             : (index - 1 + ids.count) % ids.count
         selectedTileID = ids[next]
-        currentPage = next / appsPerPage
+        currentPage = next / pageCapacity
     }
 
     /// Enter：打开当前选中的 App，或进入当前选中的文件夹。

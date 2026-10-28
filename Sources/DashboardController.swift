@@ -67,11 +67,15 @@ final class DashboardController {
 
             if !self.isEditingText {
                 if event.keyCode == 123 { // ←
-                    self.model.previousPage()
+                    withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                        self.model.previousPage()
+                    }
                     return nil
                 }
                 if event.keyCode == 124 { // →
-                    self.model.nextPage()
+                    withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                        self.model.nextPage()
+                    }
                     return nil
                 }
             }
@@ -209,6 +213,13 @@ final class DashboardController {
         let now = Date()
         let phase = event.phase
         let precise = event.hasPreciseScrollingDeltas
+        let dx = event.scrollingDeltaX
+        let dy = event.scrollingDeltaY
+
+        // 触控板横向滑动交回系统分页 ScrollView，跟手、带惯性吸附。
+        if precise, abs(dx) >= abs(dy) {
+            return event
+        }
 
         if phase == .began || phase == .mayBegin {
             scrollAccumulator = 0
@@ -237,8 +248,6 @@ final class DashboardController {
 
         guard now >= scrollCooldownUntil else { return nil }
 
-        let dx = event.scrollingDeltaX
-        let dy = event.scrollingDeltaY
         let horizontal = abs(dx) >= abs(dy)
         let delta = horizontal ? dx : dy
         guard abs(delta) > 0.001 else { return nil }
@@ -261,7 +270,7 @@ final class DashboardController {
         guard !scrollDidPage, scrollAccumulator >= threshold else { return nil }
 
         if model.pageCount > 1 {
-            withAnimation(.snappy(duration: 0.22)) {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
                 if scrollForward {
                     model.nextPage()
                 } else {

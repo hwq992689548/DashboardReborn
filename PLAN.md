@@ -14,6 +14,7 @@
 > v1.4：参考旧版 Launchpad 精简界面——去掉标题栏，只保留顶部居中大搜索框（620×46）、彩色渐变背景、底部圆点；见 `docs/screenshot.png`。
 > v1.5：背景设置——极光 / 午夜星空 / 深海 / 紫罗兰 / 石墨 / 玫瑰，自选本地图片；搜索框避开刘海/菜单栏。
 > v1.6：图标大小改为小 / 中 / 大 / 超大四档大按钮（64 / 70 / 90 / 100pt）。
+> v1.7：每页容量改为按图标尺寸 / 页面高度自动计算；触控板横向交回系统 paged scroll，滚轮一次一页弹簧动画。
 
 ---
 
@@ -32,7 +33,7 @@
 | 分组重命名 / 解散 / 移出成员 | ✅ | 本地数据模型 + 右键菜单 / 文件夹弹层 |
 | 搜索 App | ✅ | 顶部搜索框（铺满剩余宽度），按名称 / bundle id 过滤，名称命中优先 |
 | 分页 | ✅ | 底部圆点、←/→；滚轮/双指一次动作只翻一页 |
-| 设置 | ✅ | 齿轮面板：每页 20/28/35 个，图标小/中/大/超大四档按钮，`UserDefaults` 持久化 |
+| 设置 | ✅ | 齿轮面板：图标小/中/大/超大四档按钮，每页容量按尺寸自动计算；`UserDefaults` 持久化 |
 | 背景 | ✅ | 极光 / 午夜星空 / 4 种纯色 / 自选图片；图片复制到 Application Support，设置持久化 |
 | Tab 循环选择 | ✅ | 本地 keyDown 监听 + `selectedTileID`，末尾回绕，Shift+Tab 反向，跨页自动翻页 |
 | 布局持久化 | ✅ | `~/Library/Application Support/DashboardReborn/layout.json` |
@@ -77,7 +78,7 @@ Dashboard.app
 ├── GlobalHotKey.swift       Carbon 全局热键
 ├── DashboardModel.swift     状态、扫描合并、分组/删除/重命名、持久化
 ├── AppScanner.swift         枚举 /Applications 等目录
-├── SettingsOverlay.swift    每页数量 / 图标大小设置面板
+├── SettingsOverlay.swift    图标大小 / 背景设置面板
 ├── LayoutStore.swift        layout.json 读写
 ├── Models.swift             AppInfo / Folder / Tile / DashboardLayout
 ├── IconProvider.swift       图标缓存
@@ -120,7 +121,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 | 点击设置遮罩 | 关闭设置 |
 | 点击底部圆点 | 跳到指定页 |
 | 顶部搜索框 | 居中大搜索框；实时过滤；回车打开第一个，Esc 清除 |
-| 右上角齿轮 | 设置每页数量、图标大小与背景 |
+| 右上角齿轮 | 设置图标大小与背景 |
 | 点文件夹 | 打开文件夹弹层；点名称可直接改名 |
 | 编辑模式点 ×（App） | 从面板移除，不卸载；Toast 明确提示 |
 | 编辑模式点 ×（文件夹） | 解散文件夹，成员回到网格 |
@@ -133,7 +134,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 视觉：
 - 默认极光渐变；可切换午夜星空、纯色或自选图片
 - 图标大小小/中/大/超大四档；小图标 9 列，其余 7 列；不足一页内容靠上排列
-- 每页固定数量，横向分页 + 底部圆点；滚动条强制隐藏
+- 每页容量按图标尺寸与可用高度自动计算；横向分页 + 底部圆点；滚动条强制隐藏
 - 顶部只保留居中大搜索框（620×46），无标题栏，并避开刘海 / 菜单栏
 - 背景可切换极光渐变、午夜星空、纯色或自选图片
 - 搜索框 / 文件夹 / 设置 / Toast 使用玻璃或半透明材质；macOS < 26 回退毛玻璃
@@ -169,10 +170,10 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - [x] `Tab` 依次选择，最后一个之后回到第一个；`Shift+Tab` 反向（合成按键测试通过）
 - [x] 选中项有明显蓝色高亮，Enter 可打开（运行时截图验证）
 - [x] 顶部搜索能实时过滤，回车打开第一个结果（运行时截图验证）
-- [x] 列表按固定数量分页，`←` / `→`、圆点、触控板可左右翻页（分页截图 + 按键测试）
+- [x] 每页容量按图标尺寸自动计算，`←` / `→`、圆点、触控板可左右翻页（分页截图 + 按键测试）
 - [x] 鼠标滚轮 / 触控板一次滚动只翻一页，不会连续翻多页（合成滚轮测试通过）
 - [x] 点击空白背景可以收起 Dashboard，点击设置遮罩可以关闭设置（合成点击测试通过）
-- [x] 设置面板可改每页 20/28/35 个，图标小/中/大/超大，重启后保持（设置持久化自测通过）
+- [x] 设置面板可改图标小/中/大/超大，重启后保持；每页容量自动重算（设置持久化自测通过）
 - [x] 背景可切换内置样式或自选图片并持久化（背景自测通过；选图面板需实机点一次）
 - [x] 点 × 后从面板消失，重启后仍不出现（`hidden` 持久化自测通过）
 - [x] “恢复被移除的 App”能把隐藏项加回（自测通过）
@@ -203,7 +204,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - `glassEffect` 在 SwiftUICore 中可用（macOS 26.0+）
 - 扫描：标准目录原始枚举 139 份，按 bundle id 去重后 **132 个 App**
 - 构建：`swift build -c release` 通过；`dist/Dashboard.app` ad-hoc 签名，`codesign --verify --deep --strict` 通过
-- 逻辑自测：`--self-test` **27 项全部 PASS**（扫描、Tab / 跨页、排序、建组、重命名、移出、隐藏、恢复、解散、落盘、设置 / 背景持久化）
+- 逻辑自测：`--self-test` **27 项全部 PASS**（扫描、Tab / 跨页、排序、自动容量、建组、重命名、移出、隐藏、恢复、解散、落盘、设置 / 背景持久化）
 - 键盘测试：`--key-test` 合成真实 Tab / Shift+Tab / ← / → 事件，5 项 PASS
 - 滚动测试：`--scroll-test` 合成鼠标滚轮，3 项 PASS（翻一页、冷却内不连翻、再次滚动再翻一页）
 - 点击测试：`--dismiss-test` 合成点击，2 项 PASS（空白背景收起、设置遮罩关闭）
@@ -211,8 +212,8 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - 运行时截图：`--snapshot` 真实面板 3024×1964，见 `docs/screenshot.png`
 - 搜索：运行时输入 “Google” 得到 11 个匹配，名称命中排在 bundle id 命中之前，见 `docs/search.png`
 - 选中：`--snapshot` 设置第 5 个图标为选中，蓝色描边/光晕正常，见 `docs/selection.png`
-- 分页：默认 35 个/页，共 4 页；底部只显示圆点，`docs/screenshot.png`
-- 设置：每页 20/28/35、图标小/中/大/超大四档按钮、背景预设与选图入口，深色玻璃面板，见 `docs/settings.png`
+- 分页：中图标自动 35 个/页、共 4 页；小图标自动 45 个/页；底部只显示圆点，`docs/screenshot.png`
+- 设置：图标小/中/大/超大四档按钮、自动每页容量、背景预设与选图入口，深色玻璃面板，见 `docs/settings.png`
 - 背景：极光默认、午夜星空还原、纯色/自选图片；自选图片复制到 `Application Support/DashboardReborn/Backgrounds/`
 - LaunchServices：`open dist/Dashboard.app` 成功启动，并写入
   `~/Library/Application Support/DashboardReborn/layout.json`（7647 bytes）

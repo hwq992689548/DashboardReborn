@@ -28,7 +28,7 @@ struct SettingsOverlay: View {
                         Text("设置")
                             .font(.system(size: 21, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white)
-                        Text("调整每页数量、图标和背景")
+                        Text("调整图标和背景")
                             .font(.system(size: 11))
                             .foregroundStyle(.white.opacity(0.5))
                     }
@@ -36,17 +36,6 @@ struct SettingsOverlay: View {
                     Spacer()
 
                     settingsCloseButton
-                }
-
-                settingRow(
-                    title: "每页 App 数量",
-                    subtitle: "修改后回到第 1 页"
-                ) {
-                    HStack(spacing: 10) {
-                        ForEach(DashboardModel.pageSizeOptions, id: \.self) { count in
-                            pageSizeOption(count)
-                        }
-                    }
                 }
 
                 settingRow(
@@ -103,7 +92,7 @@ struct SettingsOverlay: View {
                 }
 
                 HStack(alignment: .center, spacing: 10) {
-                    Text("共 \(model.pageCount) 页 · 每页 \(model.appsPerPage) 个 · 设置自动保存")
+                    Text("共 \(model.pageCount) 页 · 每页 \(model.pageCapacity) 个 · 随图标大小自动调整")
                         .font(.system(size: 11))
                         .foregroundStyle(.white.opacity(0.45))
 
@@ -156,32 +145,6 @@ struct SettingsOverlay: View {
         }
         .buttonStyle(.plain)
         .help("\(Int(choice.side))pt")
-    }
-
-    private func pageSizeOption(_ count: Int) -> some View {
-        let selected = model.appsPerPage == count
-        return Button {
-            model.appsPerPage = count
-        } label: {
-            Text("\(count) 个")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(selected ? 0.98 : 0.58))
-                .frame(maxWidth: .infinity)
-                .frame(height: 40)
-                .background {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white.opacity(selected ? 0.20 : 0.07))
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(
-                            Color.white.opacity(selected ? 0.26 : 0.10),
-                            lineWidth: selected ? 1.4 : 0.8
-                        )
-                }
-                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
     }
 
     private var settingsCloseButton: some View {
