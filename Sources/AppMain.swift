@@ -488,7 +488,10 @@ enum DashboardMain {
 
         model.removeFromFolder(folderID: createdFolder.id, path: second)
         check(model.layout.tiles.contains(.app(second)), "成员移出文件夹回到网格")
-        check(model.folder(id: createdFolder.id)?.appPaths == [first], "文件夹保留剩余成员")
+        check(
+            model.folder(id: createdFolder.id) == nil && model.layout.tiles.contains(.app(first)),
+            "只剩 1 个 App 后分组自动解散"
+        )
 
         model.removeFromDashboard(first)
         check(model.layout.hidden.contains(first), "从面板移除并记录隐藏")

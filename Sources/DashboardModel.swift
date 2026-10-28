@@ -235,9 +235,13 @@ final class DashboardModel: ObservableObject {
                 present.insert(path)
             case .folder(var folder):
                 folder.appPaths = folder.appPaths.filter { validPaths.contains($0) }
-                guard !folder.appPaths.isEmpty else { continue }
-                tiles.append(.folder(folder))
-                present.formUnion(folder.appPaths)
+                if folder.appPaths.count == 1, let only = folder.appPaths.first {
+                    tiles.append(.app(only))
+                    present.insert(only)
+                } else if !folder.appPaths.isEmpty {
+                    tiles.append(.folder(folder))
+                    present.formUnion(folder.appPaths)
+                }
             }
         }
 
@@ -365,17 +369,26 @@ final class DashboardModel: ObservableObject {
 
     func removeFromFolder(folderID: UUID, path: String) {
         guard let index = layout.tiles.firstIndex(where: { $0.folder?.id == folderID }),
-              var folder = layout.tiles[index].folder else { return }
+              var folder = layout.tiles[index].folder,
+              folder.appPaths.contains(path) else { return }
+
         folder.appPaths.removeAll { $0 == path }
 
         var tiles = layout.tiles
-        if folder.appPaths.isEmpty {
-            tiles.remove(at: index)
+        tiles.remove(at: index)
+
+        if folder.appPaths.count > 1 {
+            tiles.insert(.folder(folder), at: index)
+            tiles.insert(.app(path), at: index + 1)
+        } else if let remaining = folder.appPaths.first {
+            // 只剩一个成员：文件夹自动解散，两个 App 一起回到网格。
+            tiles.insert(.app(remaining), at: index)
+            tiles.insert(.app(path), at: index + 1)
+            if openedFolderID == folderID { openedFolderID = nil }
+            showToast("分组只剩 1 个 App，已自动解散")
         } else {
-            tiles[index] = .folder(folder)
-        }
-        if !tiles.contains(.app(path)) {
-            tiles.append(.app(path))
+            tiles.insert(.app(path), at: index)
+            if openedFolderID == folderID { openedFolderID = nil }
         }
 
         var newLayout = layout
@@ -427,9 +440,12 @@ final class DashboardModel: ObservableObject {
                 if appPath != path { tiles.append(tile) }
             case .folder(var folder):
                 folder.appPaths.removeAll { $0 == path }
-                if !folder.appPaths.isEmpty {
+                if folder.appPaths.count == 1, let remaining = folder.appPaths.first {
+                    tiles.append(.app(remaining))
+                } else if folder.appPaths.count > 1 {
                     tiles.append(.folder(folder))
-                } else if openedFolderID == folder.id {
+                }
+                if folder.appPaths.count <= 1, openedFolderID == folder.id {
                     openedFolderID = nil
                 }
             }
@@ -614,8 +630,29 @@ final class DashboardModel: ObservableObject {
     // MARK: - 私有
 
     private func apply(_ newLayout: DashboardLayout) {
-        layout = newLayout
-        store.save(newLayout)
+        // 文件夹只剩 1 个成员时不再保留文件夹结构，自动还原成单个 App。
+        var normalized = newLayout
+        var tiles: [Tile] = []
+        for tile in newLayout.tiles {
+            switch tile {
+            case .folder(let folder):
+                if folder.appPaths.count > 1 {
+                    tiles.append(tile)
+                } else if let only = folder.appPaths.first {
+                    tiles.append(.app(only))
+                }
+            default:
+                tiles.append(tile)
+            }
+        }
+        normalized.tiles = tiles
+        layout = normalized
+        store.save(normalized)
+
+        if let id = openedFolderID,
+           !normalized.tiles.contains(where: { $0.folder?.id == id }) {
+            openedFolderID = nil
+        }
     }
 
     private func showToast(_ message: String) {

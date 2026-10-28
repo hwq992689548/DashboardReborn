@@ -6,6 +6,10 @@ struct FolderOverlay: View {
     var preview: Bool = false
 
     @State private var draftName: String = ""
+    @State private var cardFrame: CGRect = .zero
+    @State private var draggedPath: String?
+    @State private var dragLocation: CGPoint = .zero
+    @State private var isOutside = false
 
     private let columns = [GridItem(.adaptive(minimum: 100, maximum: 116), spacing: 14)]
 
@@ -24,6 +28,14 @@ struct FolderOverlay: View {
             }
             .frame(width: 760, height: 540)
             .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: FolderFramePreferenceKey.self,
+                        value: proxy.frame(in: .named("folderOverlay"))
+                    )
+                }
+            }
+            .background {
                 RoundedRectangle(cornerRadius: 30, style: .continuous)
                     .fill(Color(red: 0.055, green: 0.070, blue: 0.105).opacity(0.96))
             }
@@ -34,7 +46,34 @@ struct FolderOverlay: View {
             }
             .shadow(color: .black.opacity(0.55), radius: 40, y: 18)
             .transition(.scale(scale: 0.96).combined(with: .opacity))
+
+            if let draggedPath, let app = model.app(at: draggedPath) {
+                ZStack {
+                    Image(nsImage: IconProvider.shared.icon(for: app.path))
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 66, height: 66)
+                        .shadow(color: .black.opacity(0.55), radius: 12, y: 7)
+                        .scaleEffect(isOutside ? 1.06 : 1.0)
+
+                    if isOutside {
+                        Text("松手移出")
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.92))
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color.black.opacity(0.72)))
+                            .offset(y: 48)
+                    }
+                }
+                .position(dragLocation)
+                .allowsHitTesting(false)
+                .zIndex(20)
+            }
         }
+        .coordinateSpace(name: "folderOverlay")
+        .onPreferenceChange(FolderFramePreferenceKey.self) { cardFrame = $0 }
     }
 
     private var header: some View {
@@ -107,6 +146,7 @@ struct FolderOverlay: View {
                                 onReveal: { model.revealInFinder(path) },
                                 onRemoveFromDashboard: { model.removeFromDashboard(path) }
                             )
+                            .highPriorityGesture(folderDragGesture(path))
                         }
                     }
                 }
@@ -119,8 +159,8 @@ struct FolderOverlay: View {
         HStack(spacing: 8) {
             Image(systemName: model.isEditing ? "hand.draw" : "cursorarrow.click")
             Text(model.isEditing
-                 ? "点左上角 × 移出文件夹；右键可“从面板移除”"
-                 : "点击图标打开 App · 长按进入编辑")
+                 ? "点 × 或拖到面板外移出；右键可“从面板移除”"
+                 : "点击打开 App · 拖到面板外可移出")
             Spacer()
             if model.isEditing {
                 Text("编辑中")
@@ -135,6 +175,33 @@ struct FolderOverlay: View {
         .foregroundStyle(.white.opacity(0.55))
         .padding(.horizontal, 24)
         .padding(.vertical, 13)
+    }
+
+    private func folderDragGesture(_ path: String) -> some Gesture {
+        DragGesture(minimumDistance: 8, coordinateSpace: .named("folderOverlay"))
+            .onChanged { value in
+                if draggedPath == nil {
+                    withAnimation(.snappy(duration: 0.1)) {
+                        draggedPath = path
+                    }
+                }
+                dragLocation = value.location
+                isOutside = isOutsideCard(value.location)
+            }
+            .onEnded { value in
+                let outside = isOutsideCard(value.location)
+                withAnimation(.snappy(duration: 0.14)) {
+                    draggedPath = nil
+                    isOutside = false
+                }
+                if outside {
+                    model.removeFromFolder(folderID: folder.id, path: path)
+                }
+            }
+    }
+
+    private func isOutsideCard(_ point: CGPoint) -> Bool {
+        cardFrame != .zero && !cardFrame.contains(point)
     }
 
     private func commitRename() {
@@ -201,5 +268,15 @@ private struct FolderAppTile: View {
             Divider()
             Button("从面板移除", role: .destructive) { onRemoveFromDashboard() }
         }
+    }
+}
+
+
+private struct FolderFramePreferenceKey: PreferenceKey {
+    static var defaultValue: CGRect = .zero
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let next = nextValue()
+        if next != .zero { value = next }
     }
 }
