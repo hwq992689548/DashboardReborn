@@ -62,17 +62,16 @@ struct SettingsOverlay: View {
                 }
 
                 HStack(spacing: 10) {
-                    Text(model.hasCustomBackground ? "自定义图片已保存" : "支持 PNG / JPG / HEIC")
+                    Text(backgroundStatusText)
                         .font(.system(size: 10.5))
                         .foregroundStyle(.white.opacity(0.42))
 
                     Spacer()
 
-                    pillButton(title: "选择图片…", systemImage: "photo") {
-                        chooseBackgroundImage()
-                    }
-
                     if model.hasCustomBackground {
+                        pillButton(title: "更换图片…", systemImage: "photo") {
+                            chooseBackgroundImage()
+                        }
                         pillButton(title: "移除", systemImage: "trash", subtle: true) {
                             model.clearCustomBackground()
                         }
@@ -126,6 +125,13 @@ struct SettingsOverlay: View {
             .shadow(color: .black.opacity(0.55), radius: 40, y: 18)
             .transition(.scale(scale: 0.96).combined(with: .opacity))
         }
+    }
+
+    private var backgroundStatusText: String {
+        guard model.hasCustomBackground else {
+            return "点击「图片」选择 PNG / JPG / HEIC"
+        }
+        return model.backgroundStyle == .custom ? "当前使用自定义图片" : "已保存自定义图片"
     }
 
     private var cardHeight: CGFloat {
@@ -224,10 +230,10 @@ struct SettingsOverlay: View {
 
     private var customSwatch: some View {
         Button {
-            if model.backgroundStyle == .custom || !model.hasCustomBackground {
-                chooseBackgroundImage()
-            } else {
+            if model.hasCustomBackground {
                 model.selectBackground(.custom)
+            } else {
+                chooseBackgroundImage()
             }
         } label: {
             VStack(spacing: 4) {
@@ -261,7 +267,7 @@ struct SettingsOverlay: View {
             .frame(width: 86)
         }
         .buttonStyle(.plain)
-        .help(model.hasCustomBackground ? "点击切换或更换图片" : "选择一张图片")
+        .help(model.hasCustomBackground ? "使用自定义图片" : "选择一张图片")
     }
 
     private func chooseBackgroundImage() {

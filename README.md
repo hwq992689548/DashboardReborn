@@ -103,7 +103,7 @@ open dist/Dashboard.app
 - **极光**：默认的紫粉蓝渐变
 - **午夜**：原来的深色星空背景
 - **深海 / 紫罗兰 / 石墨 / 玫瑰**：纯色
-- **图片**：选择本地 PNG / JPG / HEIC，图片会复制到 Application Support，原文件移走也不影响
+- **图片**：点这个缩略图选择本地 PNG / JPG / HEIC；已有图片时底部只显示“更换图片… / 移除”，不再重复“选择图片”入口。图片会复制到 Application Support，原文件移走也不影响
 
 ![设置界面](docs/settings.png)
 
