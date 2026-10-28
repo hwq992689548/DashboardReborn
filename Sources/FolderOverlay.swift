@@ -139,12 +139,9 @@ struct FolderOverlay: View {
                             FolderAppTile(
                                 app: app,
                                 isEditing: model.isEditing,
-                                isSelected: model.selectedTileID == "app:\(path)",
                                 onOpen: { model.launch(path) },
-                                onSelect: { model.selectedTileID = "app:\(path)" },
                                 onLongPress: {
                                     model.isEditing = true
-                                    model.selectedTileID = "app:\(path)"
                                 },
                                 onRemoveFromFolder: {
                                     model.removeFromFolder(folderID: folder.id, path: path)
@@ -228,9 +225,7 @@ struct FolderOverlay: View {
 private struct FolderAppTile: View {
     let app: AppInfo
     let isEditing: Bool
-    let isSelected: Bool
     let onOpen: () -> Void
-    let onSelect: () -> Void
     let onLongPress: () -> Void
     let onRemoveFromFolder: () -> Void
     let onReveal: () -> Void
@@ -270,27 +265,11 @@ private struct FolderAppTile: View {
                 .frame(width: 96)
         }
         .frame(width: 104)
-        .overlay {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .strokeBorder(Color(red: 0.50, green: 0.75, blue: 1.0), lineWidth: 2.4)
-                    .background {
-                        RoundedRectangle(cornerRadius: 17, style: .continuous)
-                            .fill(Color(red: 0.35, green: 0.55, blue: 1.0).opacity(0.10))
-                    }
-                    .shadow(color: Color(red: 0.30, green: 0.55, blue: 1.0).opacity(0.45), radius: 8)
-                    .allowsHitTesting(false)
-            }
-        }
         .contentShape(Rectangle())
         .onTapGesture {
-            if isEditing {
-                onSelect()
-            } else {
-                onOpen()
-            }
+            if !isEditing { onOpen() }
         }
-        .onLongPressGesture(minimumDuration: 0.55) {
+        .onLongPressGesture(minimumDuration: 2.0) {
             onLongPress()
         }
         .contextMenu {

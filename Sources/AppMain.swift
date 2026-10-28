@@ -403,10 +403,7 @@ enum DashboardMain {
             if ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_OPEN_FOLDER"] == "1",
                let folder = controller.model.layout.tiles.compactMap(\.folder).first {
                 controller.model.openedFolderID = folder.id
-                if let first = folder.appPaths.first {
-                    controller.model.selectedTileID = "app:\(first)"
-                    controller.model.isEditing = true
-                }
+                controller.model.isEditing = true
             }
             if ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_SETTINGS"] == "1" {
                 controller.model.isShowingSettings = true
