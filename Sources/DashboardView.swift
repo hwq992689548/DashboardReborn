@@ -231,10 +231,14 @@ struct DashboardView: View {
         .layoutPriority(1)
     }
 
+    private var gridTopPadding: CGFloat {
+        24 + model.iconMetrics.side * 0.5
+    }
+
     /// 根据页面可用高度和当前图标尺寸计算每页能放多少个。
     private func autoPageCapacity(for size: CGSize) -> Int {
         let metrics = model.iconMetrics
-        let availableHeight = max(0, size.height - 24 - 8)
+        let availableHeight = max(0, size.height - gridTopPadding - 8)
         let tileHeight = metrics.iconFrame + 36
         let spacing = metrics.rowSpacing
         let rows = max(1, Int(floor((availableHeight + spacing) / (tileHeight + spacing))))
@@ -264,7 +268,7 @@ struct DashboardView: View {
                         .frame(maxWidth: model.iconMetrics.gridMaxWidth)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 24)
-                        .padding(.top, 24)
+                        .padding(.top, gridTopPadding)
                         .padding(.bottom, 8)
                     }
                 }
@@ -331,7 +335,7 @@ struct DashboardView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 24)
+        .padding(.top, gridTopPadding)
     }
 
     // MARK: - 图标格
