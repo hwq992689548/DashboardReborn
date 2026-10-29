@@ -328,9 +328,9 @@ final class DashboardModel: ObservableObject {
         apply(newLayout)
     }
 
-    /// 拖动排序：insertionIndex 是在原数组中的插入位置（0...count）。
-    func moveApp(path: String, to insertionIndex: Int) {
-        guard let from = layout.tiles.firstIndex(of: .app(path)) else { return }
+    /// 拖动排序：支持 App 格子和文件夹格子。
+    func moveTile(id: String, to insertionIndex: Int) {
+        guard let from = layout.tiles.firstIndex(where: { $0.id == id }) else { return }
 
         var target = insertionIndex
         if from < target { target -= 1 }
@@ -344,6 +344,10 @@ final class DashboardModel: ObservableObject {
         var newLayout = layout
         newLayout.tiles = tiles
         apply(newLayout)
+    }
+
+    func moveApp(path: String, to insertionIndex: Int) {
+        moveTile(id: "app:\(path)", to: insertionIndex)
     }
 
     func addToFolder(path: String, folderID: UUID) {

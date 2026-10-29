@@ -491,6 +491,16 @@ enum DashboardMain {
         model.renameFolder(id: createdFolder.id, name: "自测分组")
         check(model.folder(id: createdFolder.id)?.name == "自测分组", "文件夹重命名")
 
+        let totalTilesWithFolder = model.layout.tiles.count
+        let folderTileID = "folder:\(createdFolder.id.uuidString)"
+        model.moveTile(id: folderTileID, to: totalTilesWithFolder)
+        let movedFolderToEnd = model.layout.tiles.last?.id == folderTileID
+        model.moveTile(id: folderTileID, to: 0)
+        check(
+            movedFolderToEnd && model.layout.tiles.first?.id == folderTileID,
+            "文件夹可拖动排序"
+        )
+
         model.removeFromFolder(folderID: createdFolder.id, path: second)
         check(model.layout.tiles.contains(.app(second)), "成员移出文件夹回到网格")
         check(

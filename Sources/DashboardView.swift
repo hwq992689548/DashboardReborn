@@ -7,11 +7,12 @@ struct DashboardView: View {
     let onClose: () -> Void
 
     @State private var tileFrames: [String: CGRect] = [:]
-    @State private var dragPath: String?
+    @State private var dragTile: Tile?
     @State private var dragLocation: CGPoint = .zero
     @State private var dropTargetID: String?
     @State private var reorderIndex: Int?
     @State private var insertionLine: DropLine?
+    @State private var longPressTileID: String?
 
     var body: some View {
         ZStack {
@@ -57,6 +58,15 @@ struct DashboardView: View {
         .animation(.snappy(duration: 0.24), value: model.openedFolderID)
         .animation(.snappy(duration: 0.2), value: model.toast)
         .onPreferenceChange(TileFramePreferenceKey.self) { tileFrames = $0 }
+        .onChange(of: model.isEditing) { _, editing in
+            if !editing { longPressTileID = nil }
+        }
+        .onChange(of: model.currentPage) { _, _ in
+            longPressTileID = nil
+        }
+        .onChange(of: model.searchText) { _, _ in
+            longPressTileID = nil
+        }
         .overlay(alignment: .topLeading) {
             ZStack(alignment: .topLeading) {
                 if let line = insertionLine {
@@ -352,7 +362,7 @@ struct DashboardView: View {
                     isSelected: model.selectedTileID == tile.id,
                     metrics: model.iconMetrics,
                     onOpen: { model.launch(path) },
-                    onEnterEdit: { model.toggleEditing() },
+                    onEnterEdit: { enterEditing(from: tile.id) },
                     onRemove: { model.removeFromDashboard(path) },
                     onTrash: { model.moveToTrash(path) },
                     onReveal: { model.revealInFinder(path) }
@@ -360,8 +370,9 @@ struct DashboardView: View {
 
                 base
                     .modifier(TileFrameReader(id: tile.id))
+                    .overlay { longPressHighlight(for: tile.id) }
                     .overlay { dropHighlight(for: tile.id) }
-                    .simultaneousGesture(dragGesture(for: tile, path: path))
+                    .simultaneousGesture(dragGesture(for: tile))
             }
 
         case .folder(let folder):
@@ -377,11 +388,35 @@ struct DashboardView: View {
                         model.openedFolderID = folder.id
                     }
                 },
-                onEnterEdit: { model.toggleEditing() },
+                onEnterEdit: { enterEditing(from: tile.id) },
                 onDissolve: { model.dissolveFolder(id: folder.id) }
             )
             .modifier(TileFrameReader(id: tile.id))
+            .overlay { longPressHighlight(for: tile.id) }
             .overlay { dropHighlight(for: tile.id) }
+            .simultaneousGesture(dragGesture(for: tile))
+        }
+    }
+
+    private func enterEditing(from tileID: String) {
+        if !model.isEditing {
+            model.toggleEditing()
+        }
+        model.selectedTileID = nil
+        longPressTileID = tileID
+    }
+
+    @ViewBuilder
+    private func longPressHighlight(for id: String) -> some View {
+        if longPressTileID == id && model.selectedTileID != id {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(0.055))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
+                }
+                .allowsHitTesting(false)
+                .transition(.opacity)
         }
     }
 
@@ -399,13 +434,13 @@ struct DashboardView: View {
         }
     }
 
-    private func dragGesture(for tile: Tile, path: String) -> some Gesture {
+    private func dragGesture(for tile: Tile) -> some Gesture {
         DragGesture(minimumDistance: 6, coordinateSpace: .named("dashboard"))
             .onChanged { value in
                 guard model.isEditing else { return }
-                if dragPath == nil {
+                if dragTile == nil {
                     withAnimation(.snappy(duration: 0.12)) {
-                        dragPath = path
+                        dragTile = tile
                     }
                 }
                 dragLocation = value.location
@@ -415,24 +450,24 @@ struct DashboardView: View {
                 guard model.isEditing else { return }
                 updateDropTarget(at: value.location, source: tile)
 
-                let source = dragPath
+                let source = dragTile
                 let groupTarget = dropTargetID
                 let index = reorderIndex
 
                 withAnimation(.snappy(duration: 0.14)) {
-                    dragPath = nil
+                    dragTile = nil
                     dropTargetID = nil
                     reorderIndex = nil
                     insertionLine = nil
                 }
 
                 guard let source else { return }
-                if let groupTarget {
-                    model.drop(path: source, onto: groupTarget)
+                if let groupTarget, case .app(let path) = source {
+                    model.drop(path: path, onto: groupTarget)
                 } else if let index {
                     let globalIndex = model.currentPage * model.pageCapacity + index
                     withAnimation(.snappy(duration: 0.2)) {
-                        model.moveApp(path: source, to: globalIndex)
+                        model.moveTile(id: source.id, to: globalIndex)
                     }
                 }
             }
@@ -447,18 +482,22 @@ struct DashboardView: View {
 
         var groupID: String?
         var index: Int?
+        let sourceIsApp: Bool
+        if case .app = source { sourceIsApp = true } else { sourceIsApp = false }
 
-        // 悬停在图标中心 = 分组；悬停在图标左右边缘 = 插入排序。
+        // App 悬停图标中心 = 分组；文件夹始终只做插入排序。
         for (tileIndex, pageTile) in pageTiles.enumerated() {
             guard pageTile.id != source.id,
                   let frame = tileFrames[pageTile.id],
                   frame.contains(point) else { continue }
 
-            if pageTile.folder != nil {
+            if sourceIsApp, pageTile.folder != nil {
                 groupID = pageTile.id
             } else {
                 let relativeX = (point.x - frame.minX) / max(frame.width, 1)
-                if relativeX < 0.24 {
+                if !sourceIsApp {
+                    index = point.x < frame.midX ? tileIndex : tileIndex + 1
+                } else if relativeX < 0.24 {
                     index = tileIndex
                 } else if relativeX > 0.76 {
                     index = tileIndex + 1
@@ -530,16 +569,45 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var dragPreview: some View {
-        if let dragPath, let app = model.app(at: dragPath) {
-            Image(nsImage: IconProvider.shared.icon(for: app.path))
-                .resizable()
-                .interpolation(.high)
-                .aspectRatio(contentMode: .fit)
+        if let dragTile {
+            dragPreviewContent(for: dragTile)
                 .frame(width: 68, height: 68)
                 .shadow(color: .black.opacity(0.5), radius: 10, y: 6)
                 .offset(x: dragLocation.x - 34, y: dragLocation.y - 34)
                 .allowsHitTesting(false)
                 .transition(.scale(scale: 1.08).combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder
+    private func dragPreviewContent(for tile: Tile) -> some View {
+        switch tile {
+        case .app(let path):
+            if let app = model.app(at: path) {
+                Image(nsImage: IconProvider.shared.icon(for: app.path))
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+            }
+        case .folder(let folder):
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(0.16))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+                    }
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.82))
+                Text("\(folder.appPaths.count)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color.black.opacity(0.45)))
+                    .offset(y: 24)
+            }
         }
     }
 

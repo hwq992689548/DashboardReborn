@@ -7,7 +7,7 @@
 >
 > **实施状态（2026-10-27）：已完成可运行原型。**
 > 产物：`dist/Dashboard.app`；构建：`./build.sh`；启动：`open dist/Dashboard.app`。
-> 自动验证：构建通过、扫描到 132 个 App、F12 注册成功、布局 / 分页 / 排序 / 背景 / 设置自测 28 项全过、LaunchServices 启动并写入 `layout.json`、运行时截图见 `docs/screenshot.png`。
+> 自动验证：构建通过、扫描到 132 个 App、F12 注册成功、布局 / 分页 / 排序 / 背景 / 设置自测 29 项全过、LaunchServices 启动并写入 `layout.json`、运行时截图见 `docs/screenshot.png`。
 > v1.1：顶部搜索（名称 / bundle id，名称命中优先），见 `docs/search.png`。
 > v1.2：`Tab` / `Shift+Tab` 循环选择（末尾回绕）、蓝色高亮、`Enter` 打开，见 `docs/selection.png`。
 > v1.3：分页（默认 35 个/页）、设置面板（每页 20/28/35 个、图标小/中/大）、`←` / `→` 翻页。
@@ -25,9 +25,9 @@
 | 点击 Dashboard 时读取本机软件列表 | ✅ | `FileManager` 枚举 `/Applications`、`/System/Applications`、`~/Applications`，用 `Bundle` 读取 `CFBundleIdentifier` / 名称 |
 | 显示 App 图标 | ✅ | `NSWorkspace.shared.icon(forFile:)`，内存缓存 |
 | 点击图标启动 App | ✅ | `NSWorkspace.shared.openApplication(at:configuration:)` |
-| 长按进入编辑模式 | ✅ | SwiftUI `onLongPressGesture(minimumDuration:)` + 抖动动画 |
+| 长按进入编辑模式 | ✅ | SwiftUI 长按手势 + 抖动动画 + 淡白色选中底 |
 | 拖拽一个 App 到另一个 App 上分组 | ✅ | 自研 `DragGesture` + 控件帧命中（不使用系统 `dropDestination`，避免离屏渲染出现禁用角标） |
-| 拖动排序 | ✅ | 拖到图标边缘/空隙插入，显示插入线；页内排序 |
+| 拖动排序 | ✅ | App 和文件夹格子都可拖到边缘/空隙插入，显示插入线；页内排序 |
 | 删除（从面板移除） | ✅ | 修改本地布局 JSON；不会卸载 App，符合旧版 Dashboard 语义 |
 | 真正卸载 App（可选） | ✅ | `NSWorkspace.shared.recycle(_:)` 移到废纸篓，系统会弹授权 |
 | 分组重命名 / 解散 / 移出成员 | ✅ | 本地数据模型 + 右键菜单 / 文件夹弹层；长按 1 秒进入编辑抖动、拖出弹层、只剩 1 个自动解散 |
@@ -109,7 +109,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 | 操作 | 行为 |
 |---|---|
 | 点击 App 图标 | 启动 App，并收起 Dashboard |
-| 长按图标 1s | 进入编辑模式，图标开始轻微抖动 |
+| 长按图标 1s | 进入编辑模式，图标开始轻微抖动，并显示淡白色选中底 |
 | 编辑模式下拖拽 A 到 B 的中心 | 合成文件夹（默认名“新建文件夹”），可重命名 |
 | 拖拽 App 到文件夹 | 加入该文件夹 |
 | 拖拽到图标边缘 / 空隙 | 插入排序，显示白色插入线 |
@@ -125,7 +125,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 | 点文件夹 | 打开文件夹弹层；点名称可直接改名 |
 | 编辑模式点 ×（App） | 从面板移除，不卸载；Toast 明确提示 |
 | 编辑模式点 ×（文件夹） | 解散文件夹，成员回到网格 |
-| 文件夹内长按图标 1 秒 | 进入编辑模式，图标抖动并显示 × |
+| 文件夹内长按图标 1 秒 | 进入编辑模式，图标抖动、显示 × 和淡白色选中底 |
 | 文件夹内点 × / 拖到弹层外 | 移出文件夹，回到网格；只剩 1 个时自动解散 |
 | 右键 App | 打开 / 在访达中显示 / 从面板移除 / 移到废纸篓（系统 App 禁止） |
 | Esc | 依次关闭文件夹 → 退出编辑 → 收起面板 |
@@ -164,8 +164,9 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 
 - [x] 启动后展示本机 App 图标（本机去重后 132 个，原始枚举 139 份）
 - [x] 点击图标走 `NSWorkspace.openApplication`（已接线；启动外部 App 未做自动化点击）
-- [x] 长按 1s 进入编辑模式，图标抖动（已实现）
+- [x] 长按 1s 进入编辑模式，图标抖动并显示淡白色选中底（已实现）
 - [x] 编辑模式下拖拽 A 到 B 生成文件夹（手势 + 命中逻辑已实现，数据层自测通过）
+- [x] 文件夹格子可拖动排序（数据层自测通过）
 - [x] 拖动到边缘/空隙可插入排序，不足一页时内容靠上（数据层自测 + 运行时）
 - [x] 文件夹可打开、改名、长按 1 秒进入编辑抖动、移出成员、解散；拖出弹层可用；只剩 1 个成员自动解散（数据层自测通过）
 - [x] `Tab` 依次选择，最后一个之后回到第一个；`Shift+Tab` 反向（合成按键测试通过）
@@ -205,7 +206,7 @@ Layout    { tiles: [Tile], hidden: Set<String> }
 - `glassEffect` 在 SwiftUICore 中可用（macOS 26.0+）
 - 扫描：标准目录原始枚举 139 份，按 bundle id 去重后 **132 个 App**
 - 构建：`swift build -c release` 通过；`dist/Dashboard.app` ad-hoc 签名，`codesign --verify --deep --strict` 通过
-- 逻辑自测：`--self-test` **28 项全部 PASS**（扫描、Tab / 跨页、排序、自动容量、建组、重命名、移出、隐藏、恢复、解散、搜索保留、落盘、设置 / 背景持久化）
+- 逻辑自测：`--self-test` **29 项全部 PASS**（扫描、Tab / 跨页、排序、自动容量、建组、文件夹排序、重命名、移出、隐藏、恢复、解散、搜索保留、落盘、设置 / 背景持久化）
 - 键盘测试：`--key-test` 合成真实 Tab / Shift+Tab / ← / → 事件，5 项 PASS
 - 滚动测试：`--scroll-test` 合成鼠标滚轮，3 项 PASS（翻一页、冷却内不连翻、再次滚动再翻一页）
 - 点击测试：`--dismiss-test` 合成点击，2 项 PASS（空白背景收起、设置遮罩关闭）
@@ -228,7 +229,7 @@ cd DashboardReborn
 ./build.sh
 open dist/Dashboard.app
 
-# 自动验证（28 项）
+# 自动验证（29 项）
 DASHBOARD_LAYOUT_PATH=$PWD/.build/selftest.json \
 DASHBOARD_SETTINGS_SUITE=dash.self \
 DASHBOARD_BACKGROUND_DIR=$PWD/.build/backgrounds \
