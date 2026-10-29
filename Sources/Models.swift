@@ -106,8 +106,8 @@ struct IconMetrics {
         CGFloat(columns) * tileWidth + CGFloat(columns - 1) * gridSpacing + 40
     }
 
-    var folderMini: CGFloat { (side * 0.36).rounded() }
-    var folderInner: CGFloat { folderMini * 2 + 4 }
+    var folderMini: CGFloat { (side * 0.26).rounded() }
+    var folderInner: CGFloat { folderMini * 3 + 6 }
     var folderInset: CGFloat { (side - folderInner) / 2 }
 }
 

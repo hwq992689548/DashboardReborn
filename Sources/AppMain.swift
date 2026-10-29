@@ -393,6 +393,12 @@ enum DashboardMain {
                         $0.appPaths.contains(paths[0])
                     }) {
                         controller.model.renameFolder(id: folder.id, name: "我的分组")
+                        if let raw = ProcessInfo.processInfo.environment["DASHBOARD_SNAPSHOT_DEMO_FOLDER_COUNT"],
+                           let count = Int(raw), count > 2 {
+                            for extra in paths.dropFirst(2).prefix(count - 2) {
+                                controller.model.addToFolder(path: extra, folderID: folder.id)
+                            }
+                        }
                     }
                 }
                 controller.model.goToPage(0)

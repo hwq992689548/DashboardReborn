@@ -108,7 +108,7 @@ struct FolderTileView: View {
     let onDissolve: () -> Void
 
     private var previewPaths: [String] {
-        Array(folder.appPaths.prefix(4))
+        Array(folder.appPaths.prefix(9))
     }
 
     var body: some View {
@@ -123,8 +123,11 @@ struct FolderTileView: View {
                     .frame(width: metrics.side, height: metrics.side)
 
                 LazyVGrid(
-                    columns: [GridItem(.fixed(metrics.folderMini), spacing: 4), GridItem(.fixed(metrics.folderMini), spacing: 4)],
-                    spacing: 4
+                    columns: Array(
+                        repeating: GridItem(.fixed(metrics.folderMini), spacing: 3),
+                        count: 3
+                    ),
+                    spacing: 3
                 ) {
                     ForEach(previewPaths, id: \.self) { path in
                         Image(nsImage: IconProvider.shared.icon(for: path))

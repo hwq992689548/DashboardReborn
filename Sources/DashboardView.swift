@@ -9,9 +9,9 @@ struct DashboardView: View {
     @State private var tileFrames: [String: CGRect] = [:]
     @State private var dragTile: Tile?
     @State private var dragLocation: CGPoint = .zero
+    @State private var dragFrames: [String: CGRect] = [:]
     @State private var dropTargetID: String?
     @State private var reorderIndex: Int?
-    @State private var insertionLine: DropLine?
     @State private var pageFlipTask: Task<Void, Never>?
     @State private var pageFlipLockedDirection: Int?
 
@@ -63,17 +63,7 @@ struct DashboardView: View {
             if !editing { resetPageFlip() }
         }
         .overlay(alignment: .topLeading) {
-            ZStack(alignment: .topLeading) {
-                if let line = insertionLine {
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                        .fill(Color.white.opacity(0.96))
-                        .frame(width: 3, height: line.height)
-                        .offset(x: line.x - 1.5, y: line.y)
-                        .shadow(color: Color.black.opacity(0.4), radius: 3)
-                        .allowsHitTesting(false)
-                }
-                dragPreview
-            }
+            dragPreview
         }
         .onExitCommand(perform: handleEscape)
     }
@@ -269,11 +259,7 @@ struct DashboardView: View {
                             ForEach(cells) { cell in
                                 switch cell {
                                 case .tile(let tile):
-                                    let isLiftedSource = dragTile?.id == tile.id && reorderIndex == nil
                                     tileView(tile)
-                                        .opacity(isLiftedSource ? 0.26 : 1)
-                                        .scaleEffect(isLiftedSource ? 0.94 : 1)
-                                        .animation(.easeOut(duration: 0.12), value: isLiftedSource)
                                 case .placeholder:
                                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                                         .fill(Color.white.opacity(0.04))
@@ -305,15 +291,18 @@ struct DashboardView: View {
     }
 
     private func gridCells(for page: Int, tiles: [Tile]) -> [GridCell] {
-        guard page == model.currentPage,
-              let dragTile,
-              let reorderIndex else {
+        guard page == model.currentPage, let dragTile else {
             return tiles.map(GridCell.tile)
         }
 
         var working = tiles
-        var insertion = reorderIndex
-        if let sourceIndex = working.firstIndex(where: { $0.id == dragTile.id }) {
+        let sourceIndex = working.firstIndex(where: { $0.id == dragTile.id })
+        guard let desiredInsertion = reorderIndex ?? sourceIndex else {
+            return tiles.map(GridCell.tile)
+        }
+        var insertion = desiredInsertion
+
+        if let sourceIndex {
             working.remove(at: sourceIndex)
             if sourceIndex < insertion { insertion -= 1 }
         }
@@ -455,7 +444,8 @@ struct DashboardView: View {
             .onChanged { value in
                 guard model.isEditing else { return }
                 if dragTile == nil {
-                    withAnimation(.snappy(duration: 0.12)) {
+                    dragFrames = tileFrames
+                    withAnimation(.spring(response: 0.26, dampingFraction: 0.82)) {
                         dragTile = tile
                     }
                 }
@@ -471,12 +461,12 @@ struct DashboardView: View {
                 let index = reorderIndex
 
                 resetPageFlip()
+                dragFrames = [:]
                 guard let source else {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
                         dragTile = nil
                         dropTargetID = nil
                         reorderIndex = nil
-                        insertionLine = nil
                     }
                     return
                 }
@@ -485,7 +475,6 @@ struct DashboardView: View {
                     dragTile = nil
                     dropTargetID = nil
                     reorderIndex = nil
-                    insertionLine = nil
 
                     if let groupTarget, case .app(let path) = source {
                         model.drop(path: path, onto: groupTarget)
@@ -536,8 +525,8 @@ struct DashboardView: View {
                     model.previousPage()
                 }
                 reorderIndex = nil
-                insertionLine = nil
                 dropTargetID = nil
+                dragFrames = [:]
             }
         }
     }
@@ -554,6 +543,8 @@ struct DashboardView: View {
 
     private func updateDropTarget(at point: CGPoint, source: Tile) {
         updateEdgePageFlip(at: point)
+        if dragFrames.isEmpty { dragFrames = tileFrames }
+        let frames = dragFrames
         let pageTiles = model.tiles(on: model.currentPage)
         guard !pageTiles.isEmpty else {
             clearDropTarget()
@@ -568,7 +559,7 @@ struct DashboardView: View {
         // App 悬停图标中心 = 分组；文件夹始终只做插入排序。
         for (tileIndex, pageTile) in pageTiles.enumerated() {
             guard pageTile.id != source.id,
-                  let frame = tileFrames[pageTile.id],
+                  let frame = frames[pageTile.id],
                   frame.contains(point) else { continue }
 
             if sourceIsApp, pageTile.folder != nil {
@@ -591,17 +582,17 @@ struct DashboardView: View {
         // 空白区域：插到最近的图标前/后；下方空白直接放到本页末尾。
         if groupID == nil && index == nil {
             if let last = pageTiles.last,
-               let lastFrame = tileFrames[last.id],
+               let lastFrame = frames[last.id],
                point.y > lastFrame.maxY {
                 index = pageTiles.count
             } else if let first = pageTiles.first,
-                      let firstFrame = tileFrames[first.id],
+                      let firstFrame = frames[first.id],
                       point.y < firstFrame.minY {
                 index = 0
             } else {
                 var nearest: (index: Int, frame: CGRect, distance: CGFloat)?
                 for (tileIndex, pageTile) in pageTiles.enumerated() where pageTile.id != source.id {
-                    guard let frame = tileFrames[pageTile.id] else { continue }
+                    guard let frame = frames[pageTile.id] else { continue }
                     let distance = hypot(point.x - frame.midX, point.y - frame.midY)
                     if nearest == nil || distance < nearest!.distance {
                         nearest = (tileIndex, frame, distance)
@@ -613,39 +604,22 @@ struct DashboardView: View {
             }
         }
 
-        let line = index.flatMap { makeInsertionLine(at: $0, pageTiles: pageTiles) }
-
-        if groupID != dropTargetID || index != reorderIndex || line != insertionLine {
+        if groupID != dropTargetID || index != reorderIndex {
             if index != reorderIndex, index != nil {
                 NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
             }
             withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                 dropTargetID = groupID
                 reorderIndex = index
-                insertionLine = line
             }
         }
     }
 
-    private func makeInsertionLine(at index: Int, pageTiles: [Tile]) -> DropLine? {
-        let clamped = min(max(index, 0), pageTiles.count)
-        if clamped < pageTiles.count,
-           let frame = tileFrames[pageTiles[clamped].id] {
-            return DropLine(x: frame.minX - 8, y: frame.minY, height: frame.height)
-        }
-        if let last = pageTiles.last,
-           let frame = tileFrames[last.id] {
-            return DropLine(x: frame.maxX + 8, y: frame.minY, height: frame.height)
-        }
-        return nil
-    }
-
     private func clearDropTarget() {
-        if dropTargetID != nil || reorderIndex != nil || insertionLine != nil {
+        if dropTargetID != nil || reorderIndex != nil {
             withAnimation(.snappy(duration: 0.1)) {
                 dropTargetID = nil
                 reorderIndex = nil
-                insertionLine = nil
             }
         }
     }
@@ -809,12 +783,6 @@ struct DashboardView: View {
             case .placeholder: return "drop-placeholder"
             }
         }
-    }
-
-    private struct DropLine: Equatable {
-        let x: CGFloat
-        let y: CGFloat
-        let height: CGFloat
     }
 
     private struct TileFramePreferenceKey: PreferenceKey {
