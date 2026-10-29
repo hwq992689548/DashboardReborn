@@ -12,7 +12,8 @@ struct DashboardView: View {
     @State private var dropTargetID: String?
     @State private var reorderIndex: Int?
     @State private var insertionLine: DropLine?
-    @State private var longPressTileID: String?
+    @State private var pageFlipTask: Task<Void, Never>?
+    @State private var pageFlipLockedDirection: Int?
 
     var body: some View {
         ZStack {
@@ -59,13 +60,7 @@ struct DashboardView: View {
         .animation(.snappy(duration: 0.2), value: model.toast)
         .onPreferenceChange(TileFramePreferenceKey.self) { tileFrames = $0 }
         .onChange(of: model.isEditing) { _, editing in
-            if !editing { longPressTileID = nil }
-        }
-        .onChange(of: model.currentPage) { _, _ in
-            longPressTileID = nil
-        }
-        .onChange(of: model.searchText) { _, _ in
-            longPressTileID = nil
+            if !editing { resetPageFlip() }
         }
         .overlay(alignment: .topLeading) {
             ZStack(alignment: .topLeading) {
@@ -92,7 +87,7 @@ struct DashboardView: View {
 
             HStack(spacing: 8) {
                 if model.isEditing {
-                    Text("编辑模式 · 拖动排序 / 分组")
+                    Text("编辑模式 · 边缘翻页 / 分组")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.white.opacity(0.82))
                         .padding(.horizontal, 10)
@@ -362,7 +357,7 @@ struct DashboardView: View {
                     isSelected: model.selectedTileID == tile.id,
                     metrics: model.iconMetrics,
                     onOpen: { model.launch(path) },
-                    onEnterEdit: { enterEditing(from: tile.id) },
+                    onEnterEdit: { beginEditing() },
                     onRemove: { model.removeFromDashboard(path) },
                     onTrash: { model.moveToTrash(path) },
                     onReveal: { model.revealInFinder(path) }
@@ -370,7 +365,6 @@ struct DashboardView: View {
 
                 base
                     .modifier(TileFrameReader(id: tile.id))
-                    .overlay { longPressHighlight(for: tile.id) }
                     .overlay { dropHighlight(for: tile.id) }
                     .simultaneousGesture(dragGesture(for: tile))
             }
@@ -388,35 +382,18 @@ struct DashboardView: View {
                         model.openedFolderID = folder.id
                     }
                 },
-                onEnterEdit: { enterEditing(from: tile.id) },
+                onEnterEdit: { beginEditing() },
                 onDissolve: { model.dissolveFolder(id: folder.id) }
             )
             .modifier(TileFrameReader(id: tile.id))
-            .overlay { longPressHighlight(for: tile.id) }
             .overlay { dropHighlight(for: tile.id) }
             .simultaneousGesture(dragGesture(for: tile))
         }
     }
 
-    private func enterEditing(from tileID: String) {
+    private func beginEditing() {
         if !model.isEditing {
             model.toggleEditing()
-        }
-        model.selectedTileID = nil
-        longPressTileID = tileID
-    }
-
-    @ViewBuilder
-    private func longPressHighlight(for id: String) -> some View {
-        if longPressTileID == id && model.selectedTileID != id {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(0.055))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
-                }
-                .allowsHitTesting(false)
-                .transition(.opacity)
         }
     }
 
@@ -454,6 +431,7 @@ struct DashboardView: View {
                 let groupTarget = dropTargetID
                 let index = reorderIndex
 
+                resetPageFlip()
                 withAnimation(.snappy(duration: 0.14)) {
                     dragTile = nil
                     dropTargetID = nil
@@ -473,7 +451,59 @@ struct DashboardView: View {
             }
     }
 
+    private func updateEdgePageFlip(at point: CGPoint) {
+        let width = NSApp.keyWindow?.frame.width ?? NSScreen.main?.frame.width ?? 1512
+        let direction: Int
+        if point.x < 64 {
+            direction = -1
+        } else if point.x > width - 64 {
+            direction = 1
+        } else {
+            direction = 0
+        }
+
+        guard direction != 0 else {
+            pageFlipLockedDirection = nil
+            cancelPageFlip()
+            return
+        }
+
+        let canFlip = direction > 0
+            ? model.currentPage < model.pageCount - 1
+            : model.currentPage > 0
+        guard canFlip else {
+            cancelPageFlip()
+            return
+        }
+        guard pageFlipLockedDirection != direction, pageFlipTask == nil else { return }
+
+        pageFlipTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            guard !Task.isCancelled, dragTile != nil else { return }
+            pageFlipTask = nil
+            pageFlipLockedDirection = direction
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+                if direction > 0 {
+                    model.nextPage()
+                } else {
+                    model.previousPage()
+                }
+            }
+        }
+    }
+
+    private func cancelPageFlip() {
+        pageFlipTask?.cancel()
+        pageFlipTask = nil
+    }
+
+    private func resetPageFlip() {
+        cancelPageFlip()
+        pageFlipLockedDirection = nil
+    }
+
     private func updateDropTarget(at point: CGPoint, source: Tile) {
+        updateEdgePageFlip(at: point)
         let pageTiles = model.tiles(on: model.currentPage)
         guard !pageTiles.isEmpty else {
             clearDropTarget()

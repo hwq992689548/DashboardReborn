@@ -10,7 +10,6 @@ struct FolderOverlay: View {
     @State private var draggedPath: String?
     @State private var dragLocation: CGPoint = .zero
     @State private var isOutside = false
-    @State private var longPressedPath: String?
 
     private let columns = [GridItem(.adaptive(minimum: 100, maximum: 116), spacing: 14)]
 
@@ -75,9 +74,6 @@ struct FolderOverlay: View {
         }
         .coordinateSpace(name: "folderOverlay")
         .onPreferenceChange(FolderFramePreferenceKey.self) { cardFrame = $0 }
-        .onChange(of: model.isEditing) { _, editing in
-            if !editing { longPressedPath = nil }
-        }
     }
 
     private var header: some View {
@@ -154,17 +150,6 @@ struct FolderOverlay: View {
                                 active: model.isEditing,
                                 seed: Double(abs(path.hashValue % 6)) * 0.18
                             ))
-                            .overlay {
-                                if longPressedPath == path {
-                                    RoundedRectangle(cornerRadius: 17, style: .continuous)
-                                        .fill(Color.white.opacity(0.06))
-                                        .overlay {
-                                            RoundedRectangle(cornerRadius: 17, style: .continuous)
-                                                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
-                                        }
-                                        .allowsHitTesting(false)
-                                }
-                            }
                             .simultaneousGesture(
                                 LongPressGesture(minimumDuration: 1.0).onEnded { _ in
                                     NSHapticFeedbackManager.defaultPerformer.perform(
@@ -172,8 +157,6 @@ struct FolderOverlay: View {
                                         performanceTime: .now
                                     )
                                     model.isEditing = true
-                                    model.selectedTileID = nil
-                                    longPressedPath = path
                                 }
                             )
                             .simultaneousGesture(folderDragGesture(path))
