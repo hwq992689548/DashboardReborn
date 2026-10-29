@@ -252,6 +252,7 @@ struct DashboardView: View {
 
     private func pageView(_ page: Int, height: CGFloat) -> some View {
         let tiles = model.tiles(on: page)
+        let cells = gridCells(for: page, tiles: tiles)
 
         return ScrollView(.vertical) {
             ZStack(alignment: .top) {
@@ -265,9 +266,27 @@ struct DashboardView: View {
                         emptyState
                     } else {
                         LazyVGrid(columns: gridColumns, spacing: model.iconMetrics.rowSpacing) {
-                            ForEach(tiles) { tile in
-                                tileView(tile)
-                                    .id(tile.id)
+                            ForEach(cells) { cell in
+                                switch cell {
+                                case .tile(let tile):
+                                    let isLiftedSource = dragTile?.id == tile.id && reorderIndex == nil
+                                    tileView(tile)
+                                        .opacity(isLiftedSource ? 0.26 : 1)
+                                        .scaleEffect(isLiftedSource ? 0.94 : 1)
+                                        .animation(.easeOut(duration: 0.12), value: isLiftedSource)
+                                case .placeholder:
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .fill(Color.white.opacity(0.04))
+                                        .frame(
+                                            width: model.iconMetrics.tileWidth - 10,
+                                            height: model.iconMetrics.iconFrame
+                                        )
+                                        .frame(
+                                            width: model.iconMetrics.tileWidth,
+                                            height: model.iconMetrics.iconFrame + 36
+                                        )
+                                        .transition(.opacity)
+                                }
                             }
                         }
                         .frame(maxWidth: model.iconMetrics.gridMaxWidth)
@@ -283,6 +302,26 @@ struct DashboardView: View {
             .background(ScrollIndicatorHider())
         }
         .scrollIndicators(.never)
+    }
+
+    private func gridCells(for page: Int, tiles: [Tile]) -> [GridCell] {
+        guard page == model.currentPage,
+              let dragTile,
+              let reorderIndex else {
+            return tiles.map(GridCell.tile)
+        }
+
+        var working = tiles
+        var insertion = reorderIndex
+        if let sourceIndex = working.firstIndex(where: { $0.id == dragTile.id }) {
+            working.remove(at: sourceIndex)
+            if sourceIndex < insertion { insertion -= 1 }
+        }
+        insertion = min(max(insertion, 0), working.count)
+
+        var cells = working.map(GridCell.tile)
+        cells.insert(.placeholder, at: insertion)
+        return cells
     }
 
     private var gridColumns: [GridItem] {
@@ -432,22 +471,30 @@ struct DashboardView: View {
                 let index = reorderIndex
 
                 resetPageFlip()
-                withAnimation(.snappy(duration: 0.14)) {
+                guard let source else {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
+                        dragTile = nil
+                        dropTargetID = nil
+                        reorderIndex = nil
+                        insertionLine = nil
+                    }
+                    return
+                }
+
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
                     dragTile = nil
                     dropTargetID = nil
                     reorderIndex = nil
                     insertionLine = nil
-                }
 
-                guard let source else { return }
-                if let groupTarget, case .app(let path) = source {
-                    model.drop(path: path, onto: groupTarget)
-                } else if let index {
-                    let globalIndex = model.currentPage * model.pageCapacity + index
-                    withAnimation(.snappy(duration: 0.2)) {
+                    if let groupTarget, case .app(let path) = source {
+                        model.drop(path: path, onto: groupTarget)
+                    } else if let index {
+                        let globalIndex = model.currentPage * model.pageCapacity + index
                         model.moveTile(id: source.id, to: globalIndex)
                     }
                 }
+                NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
             }
     }
 
@@ -488,6 +535,9 @@ struct DashboardView: View {
                 } else {
                     model.previousPage()
                 }
+                reorderIndex = nil
+                insertionLine = nil
+                dropTargetID = nil
             }
         }
     }
@@ -566,7 +616,10 @@ struct DashboardView: View {
         let line = index.flatMap { makeInsertionLine(at: $0, pageTiles: pageTiles) }
 
         if groupID != dropTargetID || index != reorderIndex || line != insertionLine {
-            withAnimation(.snappy(duration: 0.1)) {
+            if index != reorderIndex, index != nil {
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+            }
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                 dropTargetID = groupID
                 reorderIndex = index
                 insertionLine = line
@@ -602,7 +655,8 @@ struct DashboardView: View {
         if let dragTile {
             dragPreviewContent(for: dragTile)
                 .frame(width: 68, height: 68)
-                .shadow(color: .black.opacity(0.5), radius: 10, y: 6)
+                .scaleEffect(1.06)
+                .shadow(color: .black.opacity(0.55), radius: 14, y: 8)
                 .offset(x: dragLocation.x - 34, y: dragLocation.y - 34)
                 .allowsHitTesting(false)
                 .transition(.scale(scale: 1.08).combined(with: .opacity))
@@ -741,6 +795,18 @@ struct DashboardView: View {
                 content.scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne))
             } else {
                 content.scrollTargetBehavior(.paging)
+            }
+        }
+    }
+
+    private enum GridCell: Identifiable {
+        case tile(Tile)
+        case placeholder
+
+        var id: String {
+            switch self {
+            case .tile(let tile): return tile.id
+            case .placeholder: return "drop-placeholder"
             }
         }
     }
